@@ -2,6 +2,8 @@
 
 An external app that injects cursor input into game memory.
 
+This fork changes the hook toggle from ``4`` to ``Right Ctrl``. So far, that's literally it.
+
 ### *If you have a game request, please go to the 'Discussions' tab and post it!*
 ### _Scroll to bottom for_ <font color="red"> *FREQUENTLY ASKED QUESTIONS* </font>
 
@@ -36,7 +38,7 @@ An external app that injects cursor input into game memory.
 2. Start MouseInjector, read initial information then press ctrl+1
 3. Make sure game is running and press '4' to hook into the process
     1. If game is supported then the mouse will be captured at the position it was at when hooked
-        * You will be <b><u>unable</u></b> to use the mouse elsewhere while it is hooked, press 4 to unhook
+        * You will be <b><u>unable</u></b> to use the mouse elsewhere while it is hooked, press right ctrl to unhook
         * Some games depend on post startup values/addresses so hook may not happen immediately
             * DuckStation games usually will not hook until after the startup sequence
     2. Unsupported/broken games will not hook and mouse won't be captured
