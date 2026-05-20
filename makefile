@@ -5,7 +5,7 @@
 
 #Compiler directories
 #MINGWDIR = C:/Dev/Dev-Cpp/MinGW64/bin/
-MINGWDIR = C:/Dev/TDM-GCC-64/bin/
+MINGWDIR = C:/msys64/ucrt64/bin/
 CC = $(MINGWDIR)gcc
 WINDRES = $(MINGWDIR)windres
 
@@ -18,7 +18,7 @@ EXENAME = "$(SRCDIR)Mouse Injector.exe"
 
 #Compiler flags
 CFLAGS = -ansi -O2 -m64 -std=c99 -Wall
-WFLAGS = -Wextra -pedantic -Wno-parentheses
+#WFLAGS = -Wextra -pedantic -Wno-parentheses
 RESFLAGS = -F pe-x86-64 --input-format=rc -O coff
 
 #Linker flags

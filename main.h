@@ -18,6 +18,7 @@
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
 #include <string.h>
+#include <math.h>
 
 #define DOLPHINVERSION "Dolphin"
 #define BUILDINFO "(v0.31 - "__DATE__")"
@@ -36,6 +37,7 @@
 #define K_PLUS (GetAsyncKeyState(0x6B) || GetAsyncKeyState(0xBB)) // key '+'
 #define K_MINUS (GetAsyncKeyState(0x6D) || GetAsyncKeyState(0xBD)) // key '-'
 #define K_INSERT GetAsyncKeyState(0x2D) // key 'Insert'
+#define K_RCTRL GetAsyncKeyState(0xA3) // key 'Right Ctrl'
 #if _MSC_VER && !__INTEL_COMPILER // here because some MSVC versions only support __inline :/
 #define inline __inline
 #endif
