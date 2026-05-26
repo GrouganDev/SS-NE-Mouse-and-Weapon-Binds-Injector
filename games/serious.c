@@ -71,8 +71,6 @@ static void SERIOUS_Inject(void)
 	SERIOUS_Code_Inject();
 	SERIOUS_Weapon_Check();
 
-	//printf("%d", currentweapon);
-
 	if(xmouse == 0 && ymouse == 0) // if mouse is idle
 		return;
 	const uint32_t playerbase = MEM_ReadUInt(SERIOUS_playerbase);
@@ -97,7 +95,9 @@ static void SERIOUS_Inject(void)
 	}
 }
 
-
+//==========================================================================
+// Purpose: injects custom assembly code into dolphin in order to allow for custom weapon binds
+//==========================================================================
 static void SERIOUS_Code_Inject(void)
 {
 	MEM_WriteInt(0x800c5aa0, 0x49712D95); //bl 0x817d8834
@@ -131,48 +131,75 @@ static void SERIOUS_Code_Inject(void)
 	MEM_WriteInt(0x817d88c4, 0x4e800020); //blr
 }
 
+//==========================================================================
+// Purpose: restores original assembly instructions where overwritten
+//==========================================================================
 void SERIOUS_Code_DeInject(void)
 {
-	MEM_WriteInt(0x800c5aa0, 0x83df05f8);
-    MEM_WriteInt(0x800c5afc, 0x93df05f8);
+	MEM_WriteInt(0x800c5aa0, 0x83df05f8); //lwz r30, 0x05F8 (r31)
+    MEM_WriteInt(0x800c5afc, 0x93df05f8); //stw r30, 0x05F8 (r31)
 }
 
 
+
+/*
+WEAPON INDICES:
+
+0x00000000 - Chainsaw
+0x00000001 - Pistol(s)
+0x00000002 - Uzis
+0x00000003 - Shotgun
+0x00000004 - Minigun
+0x00000005 - Grenade Launcher
+0x00000006 - Rocket Launcher
+0x00000007 - Flamethrower
+0x00000008 - Sniper Rifle
+0x00000009 - Sirian Powergun
+0x0000000A - Cannon
+0x0000000B - Serious Bomb
+*/
+
+//==========================================================================
+// Purpose: checks key pressed according to 'KEYS' to set up new weapon to switch to
+//==========================================================================
 static void SERIOUS_Weapon_Check(void)
 {
 	uint32_t currentweapon = 0xFFFFFFFF;
 	uint32_t altweapon = 0xFFFFFFFF;
 
-	if(KEYS->K_1_Pressed){
+	if(KEYS->K_Chainsaw_Pressed || KEYS->K_Chainsaw_Alt_Pressed){
 		currentweapon = 0x00000000;
 	}
-	if(KEYS->K_2_Pressed){
+	if(KEYS->K_Pistols_Pressed || KEYS->K_Pistols_Alt_Pressed){
 		currentweapon = 0x00000001;
 	}
-	if(KEYS->K_3_Pressed){
+	if(KEYS->K_Shotgun_Pressed || KEYS->K_Shotgun_Alt_Pressed){
 		currentweapon = 0x00000003;
 	}
-	if(KEYS->K_4_Pressed){
+	if(KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x00000002, 0x00000004, &currentweapon, &altweapon);
 	}
-	if(KEYS->K_F_Pressed){
+	if(KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x00000006, 0x00000005, &currentweapon, &altweapon);
 	}
-	if(KEYS->K_X_Pressed || KEYS->M_XBUTTON2_Pressed){
+	if(KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x00000007, 0x00000008, &currentweapon, &altweapon);
 	}
-	if(KEYS->K_C_Pressed || KEYS->M_XBUTTON1_Pressed){
+	if(KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x0000000A, 0x00000009, &currentweapon, &altweapon);
 	}
-	if(KEYS->K_LALT_Pressed){
+	if(KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed){
 		currentweapon = 0x0000000B;
 	}
 
 	if(currentweapon != 0xFFFFFFFF){
-		SERIOUS_Update_Weapon(currentweapon, altweapon);
+		SERIOUS_Update_Weapon(currentweapon, altweapon); // update memory to swap to selected weapon
 	}
 }
 
+//==========================================================================
+// Purpose: checks the player's current weapon to determine which weapon in the category is to be selected
+//==========================================================================
 static void SERIOUS_Assign_Weapon_Group(uint32_t first, uint32_t second, uint32_t* mainweapon, uint32_t* altweapon)
 {	
 	uint32_t currentweapon = MEM_ReadInt(0x817D8860);
@@ -189,7 +216,9 @@ static void SERIOUS_Assign_Weapon_Group(uint32_t first, uint32_t second, uint32_
 	}
 }
 
-
+//==========================================================================
+// Purpose: updates necessary regions of memory to contain the new weapon index for gameplay
+//==========================================================================
 static void SERIOUS_Update_Weapon(uint32_t mainweapon, uint32_t altweapon)
 {
 	uint32_t clampedweaponind = (((int32_t)mainweapon - 1) % 12);
@@ -202,51 +231,77 @@ static void SERIOUS_Update_Weapon(uint32_t mainweapon, uint32_t altweapon)
 }
 
 
-
-
-
-
+//==========================================================================
+// Purpose: sets the 'KEYS' pointer to point to main.c's 'keys'
+//==========================================================================
 void UPDATE_Keys_Struct(SERIOUSKEYS* keys){
 	KEYS = keys;
 }
 
 
-
+//==========================================================================
+// Purpose: large function to check the status of every key for weapon binds
+//==========================================================================
 void UPDATE_Serious_Keys(SERIOUSKEYS* keys)
 {
-    CHECK_Key(&keys->K_1_Pressed, &keys->K_1_Last_Pressed, K_1);
+	SEARCH_Serious_Keys(&keys->K_Chainsaw_Pressed, &keys->K_Chainsaw_Last_Pressed, &keys->K_Chainsaw_Alt_Pressed, &keys->K_Chainsaw_Alt_Last_Pressed, &keys->K_Chainsaw[0]);
 
-    CHECK_Key(&keys->K_2_Pressed, &keys->K_2_Last_Pressed, K_2);
+	SEARCH_Serious_Keys(&keys->K_Pistols_Pressed, &keys->K_Pistols_Last_Pressed, &keys->K_Pistols_Alt_Pressed, &keys->K_Pistols_Alt_Last_Pressed, &keys->K_Pistols[0]);
 
-    CHECK_Key(&keys->K_3_Pressed, &keys->K_3_Last_Pressed, K_3);
+	SEARCH_Serious_Keys(&keys->K_Shotgun_Pressed, &keys->K_Shotgun_Last_Pressed, &keys->K_Shotgun_Alt_Pressed, &keys->K_Shotgun_Alt_Last_Pressed, &keys->K_Shotgun[0]);
 
-    CHECK_Key(&keys->K_4_Pressed, &keys->K_4_Last_Pressed, K_4);
-    
-    CHECK_Key(&keys->K_F_Pressed, &keys->K_F_Last_Pressed, K_F);
+	SEARCH_Serious_Keys(&keys->K_Bullets_Pressed, &keys->K_Bullets_Last_Pressed, &keys->K_Bullets_Alt_Pressed, &keys->K_Bullets_Alt_Last_Pressed, &keys->K_Bullets[0]);
 
-    CHECK_Key(&keys->K_X_Pressed, &keys->K_X_Last_Pressed, K_X);
-    
-    CHECK_Key(&keys->K_C_Pressed, &keys->K_C_Last_Pressed, K_C);
+	SEARCH_Serious_Keys(&keys->K_Explosives_Pressed, &keys->K_Explosives_Last_Pressed, &keys->K_Explosives_Alt_Pressed, &keys->K_Explosives_Alt_Last_Pressed, &keys->K_Explosives[0]);
 
-    CHECK_Key(&keys->K_LALT_Pressed, &keys->K_LALT_Last_Pressed, K_LALT);
+	SEARCH_Serious_Keys(&keys->K_FlameRifle_Pressed, &keys->K_FlameRifle_Last_Pressed, &keys->K_FlameRifle_Alt_Pressed, &keys->K_FlameRifle_Alt_Last_Pressed, &keys->K_FlameRifle[0]);
 
-    CHECK_Key(&keys->M_XBUTTON1_Pressed, &keys->M_XBUTTON1_Last_Pressed, M_XBUTTON1);
+	SEARCH_Serious_Keys(&keys->K_CannonPowergun_Pressed, &keys->K_CannonPowergun_Last_Pressed, &keys->K_CannonPowergun_Alt_Pressed, &keys->K_CannonPowergun_Alt_Last_Pressed, &keys->K_CannonPowergun[0]);
 
-    CHECK_Key(&keys->M_XBUTTON2_Pressed, &keys->M_XBUTTON2_Last_Pressed, M_XBUTTON2);
+	SEARCH_Serious_Keys(&keys->K_Bomb_Pressed, &keys->K_Bomb_Last_Pressed, &keys->K_Bomb_Alt_Pressed, &keys->K_Bomb_Alt_Last_Pressed, &keys->K_Bomb[0]);
 }
 
+//==========================================================================
+// Purpose: checks to see if there are null values in either the primary or alt weapon keybinds before then checking for that key's status
+//==========================================================================
+void SEARCH_Serious_Keys(bool *pressed, bool *last_pressed, bool *alt_pressed, bool *alt_last_pressed, uint8_t ls[])
+{
+	if(ls[0] != 0x00)
+	{
+		CHECK_Key(pressed, last_pressed, GetAsyncKeyState(ls[0]));
+	}
+	else
+	{
+		*pressed = false;
+		*last_pressed = false;
+	}
 
+
+	if(ls[1] != 0x00)
+	{
+		CHECK_Key(alt_pressed, alt_last_pressed, GetAsyncKeyState(ls[1]));
+	}
+	else
+	{
+		*alt_pressed = false;
+		*alt_last_pressed = false;
+	}
+}
+
+//==========================================================================
+// Purpose: determines the status of a key press with the purpose of only detecting if a key was JUST pressed
+//==========================================================================
 void CHECK_Key(bool *pressed, bool *last_pressed, SHORT key){
-    if(key && !*last_pressed){
+    if(key && !*last_pressed){ // key was just pressed and was not being previously held down
         *last_pressed = true;
         *pressed = true;
     }
-    else if(!key)
+    else if(!key) // key was not pressed
     {
         *last_pressed = false;
         *pressed = false;
     }
-    else if(*last_pressed)
+    else if(*last_pressed) // key is being held down
     {
         *pressed = false;
     }
