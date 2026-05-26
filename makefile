@@ -17,8 +17,13 @@ OBJDIR = $(SRCDIR)obj/
 EXENAME = "$(SRCDIR)Mouse Injector.exe"
 
 #Compiler flags
+<<<<<<< Updated upstream
 CFLAGS = -ansi -O2 -m64 -std=c99 -Wall
 WFLAGS = -Wextra -pedantic -Wno-parentheses
+=======
+CFLAGS = -O2 -ansi -m64 -std=c99 -Wall
+#WFLAGS = -Wextra -pedantic -Wno-parentheses
+>>>>>>> Stashed changes
 RESFLAGS = -F pe-x86-64 --input-format=rc -O coff
 
 #Linker flags
@@ -51,6 +56,9 @@ $(OBJDIR)windows_wminput.o: $(MANYMOUSEDIR)windows_wminput.c $(MANYMOUSEDIR)many
 
 $(OBJDIR)icon.res: $(SRCDIR)icon.rc $(SRCDIR)icon.ico
 	$(WINDRES) -i $(SRCDIR)icon.rc -o $(OBJDIR)icon.res $(RESFLAGS)
+
+$(OBJDIR)seriousinputchecker.o: $(SRCDIR)seriousinputchecker.c $(SRCDIR)seriousinputchecker.h
+	$(CC) -c $(SRCDIR)seriousinputchecker.c -o $(OBJDIR)seriousinputchecker.o $(CFLAGS) $(WFLAGS)
 
 #Game drivers recipe
 $(OBJDIR)%.o: $(GAMESDIR)%.c $(SRCDIR)main.h $(SRCDIR)memory.h $(SRCDIR)mouse.h $(GAMESDIR)game.h

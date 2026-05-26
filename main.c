@@ -21,10 +21,15 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
-#include "main.h"
 #include "memory.h"
 #include "mouse.h"
 #include "./games/game.h"
+#include <stdio.h>
+#include "main.h"
+
+#include "seriousinputchecker.h"
+#include "./games/serious.h"
+
 
 enum EDITINGCURRENT {EDITINGSENSITIVITY = 0, EDITINGCROSSHAIR};
 
@@ -91,6 +96,10 @@ int32_t main(void)
 		GUI_Welcome(); // show welcome message - wait for user input before continuing
 	GUI_Update(); // update screen with options
 	atexit(quit); // set function to run when program is closed
+
+	SERIOUSKEYS keys;
+	UPDATE_Keys_Struct(&keys);
+
 	int initialHookOccurred = 0;
 	while(1)
 	{
@@ -98,6 +107,8 @@ int32_t main(void)
 		int hooked = 0;
 		if(mousetoggle)
 		{
+			UPDATE_Serious_Keys(&keys);
+
 			if(GAME_Status()) // if supported game has been detected
 			{
 				MOUSE_Update(GAME_Tickrate()); // update xmouse and ymouse vars so injection use latest mouse input
@@ -138,6 +149,7 @@ int32_t main(void)
 //==========================================================================
 static void quit(void)
 {
+	GAME_DeInject();
 	INI_Save(0);
 	MOUSE_Quit();
 	MEM_Quit();
@@ -195,6 +207,7 @@ static void GUI_Interact(void)
 	{
 		MOUSE_Lock();
 		MOUSE_Update(GAME_Tickrate());
+		GAME_DeInject();
 		mousetoggle = !mousetoggle;
 		updateinterface = 1;
 	}
