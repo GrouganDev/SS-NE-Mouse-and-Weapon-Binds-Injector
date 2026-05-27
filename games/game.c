@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include "../main.h"
 #include "game.h"
+#include "serious.h"
+#include <stdio.h>
 
 extern const GAMEDRIVER *GAME_TS2;
 extern const GAMEDRIVER *GAME_TS3;
@@ -364,7 +366,9 @@ uint8_t GAME_Status(void)
 	{
 		THIS_GAME = *(GAMELIST[i]);
 		if(THIS_GAME != NULL && THIS_GAME->Status())
+		{
 			CURRENT_GAME = THIS_GAME;
+		}
 	}
 	return (CURRENT_GAME != NULL);
 }
@@ -423,6 +427,15 @@ const char *GAME_OptionMessage(void)
 			return CURRENT_GAME->Option2;
 	}
 	return "Option not supported";
+}
+
+
+void GAME_DeInject()
+{
+	if (CURRENT_GAME == GAME_SERIOUS)
+	{
+		SERIOUS_Code_DeInject();
+	}
 }
 
 // const void *GAME_ChangeOptionMessage(char* newMessage)

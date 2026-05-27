@@ -21,10 +21,15 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
-#include "main.h"
 #include "memory.h"
 #include "mouse.h"
 #include "./games/game.h"
+#include <stdio.h>
+#include "main.h"
+
+#include "seriousinputchecker.h"
+#include "./games/serious.h"
+
 
 enum EDITINGCURRENT {EDITINGSENSITIVITY = 0, EDITINGCROSSHAIR};
 
@@ -62,6 +67,8 @@ static void GUI_ListGames(void);
 static void GUI_Clear(void);
 static void INI_Load(void);
 static void INI_Save(const uint8_t showerror);
+static void BINDS_Load(SERIOUSKEYS* keys);
+static void BINDS_Init(void);
 
 //==========================================================================
 // Purpose: run everything like a god damn speed demon
@@ -69,10 +76,14 @@ static void INI_Save(const uint8_t showerror);
 int32_t main(void)
 {
 	timeBeginPeriod(1);
+	
 
 	// TODO: Warn if multiple valid emulators are running
 	// Hide mouse when hooked to emulator and supported game is running
 	GUI_Init();
+
+	
+
 	if(!MEM_Init()) // close if dolphin or duckstation was not detected
 	{
 		printf("\n Mouse Injector for %s %s\n%s\n\n   Supported emulator not detected. Closing...", DOLPHINVERSION, BUILDINFO, LINE);
@@ -91,13 +102,23 @@ int32_t main(void)
 		GUI_Welcome(); // show welcome message - wait for user input before continuing
 	GUI_Update(); // update screen with options
 	atexit(quit); // set function to run when program is closed
+
+	SERIOUSKEYS keys;
+	BINDS_Load(&keys); // load SS:NE weapon binds from ssnebinds.ini
+	UPDATE_Keys_Struct(&keys); // updates serious.c's SERIOUSKEYS pointer to point to 'keys'
+
 	int initialHookOccurred = 0;
+
 	while(1)
 	{
 		GUI_Interact(); // check hotkey input
 		int hooked = 0;
+
+
 		if(mousetoggle)
 		{
+			UPDATE_Serious_Keys(&keys); // updates 'keys' with all button statuses
+
 			if(GAME_Status()) // if supported game has been detected
 			{
 				MOUSE_Update(GAME_Tickrate()); // update xmouse and ymouse vars so injection use latest mouse input
@@ -138,6 +159,7 @@ int32_t main(void)
 //==========================================================================
 static void quit(void)
 {
+	GAME_DeInject();
 	INI_Save(0);
 	MOUSE_Quit();
 	MEM_Quit();
@@ -195,6 +217,7 @@ static void GUI_Interact(void)
 	{
 		MOUSE_Lock();
 		MOUSE_Update(GAME_Tickrate());
+		GAME_DeInject();
 		mousetoggle = !mousetoggle;
 		updateinterface = 1;
 	}
@@ -316,17 +339,17 @@ static void GUI_Update(void)
 static void GUI_ListGames(void)
 {
 	GUI_Clear();
-	printf("\n Supported Games (NTSC Only)\t\tGame IDs     Mouse Support\n%s\n\n", LINE);
-	printf("    TimeSplitters 2\t\t\t GTSE4F\t\t Fair\n\n");
-	printf("    TimeSplitters: Future Perfect\t G3FE69\t\t Poor\n\n");
-	printf("    007: NightFire\t\t\t GO7E69\t\t Poor\n\n");
-	printf("    Medal of Honor: Frontline\t\t GMFE69\t\t Fair\n\n");
-	printf("    Medal of Honor: European Assault\t GONE69\t\t Good\n\n");
-	printf("    Medal of Honor: Rising Sun\t\t GR8E69\t\t Poor\n\n");
-	printf("    Call of Duty 2: Big Red One\t\t GQCE52\t\t Good\n\n");
-	printf("    Die Hard: Vendetta\t\t\t GDIE7D\t\t Fair\n\n");
-	printf("    Serious Sam: Next Encounter\t\t G3BE9G\t\t Fair\n\n");
-	printf("    Trigger Man\t\t\t\t GG2E4Z\t\t Good\n\n");
+	printf("\n Supported Games (NTSC only except for SS:NE)\tGame IDs     Mouse Support\n%s\n\n", LINE);
+	printf("    TimeSplitters 2\t\t\t\t GTSE4F\t\t Fair\n\n");
+	printf("    TimeSplitters: Future Perfect\t\t G3FE69\t\t Poor\n\n");
+	printf("    007: NightFire\t\t\t\t GO7E69\t\t Poor\n\n");
+	printf("    Medal of Honor: Frontline\t\t\t GMFE69\t\t Fair\n\n");
+	printf("    Medal of Honor: European Assault\t\t GONE69\t\t Good\n\n");
+	printf("    Medal of Honor: Rising Sun\t\t\t GR8E69\t\t Poor\n\n");
+	printf("    Call of Duty 2: Big Red One\t\t\t GQCE52\t\t Good\n\n");
+	printf("    Die Hard: Vendetta\t\t\t\t GDIE7D\t\t Fair\n\n");
+	printf("    Serious Sam: Next Encounter\t\t     G3BE9G / G3BP9G\t Fair\n\n");
+	printf("    Trigger Man\t\t\t\t\t GG2E4Z\t\t Good\n\n");
 	printf("   Returning to Main Menu in 10 Seconds...\n%s\n", LINE);
 }
 //==========================================================================
@@ -346,6 +369,121 @@ static void GUI_Clear(void)
 	FillConsoleOutputAttribute(consolehandle, csbi.wAttributes, size, coord, &n);
 	SetConsoleCursorPosition(consolehandle, coord); // reset the cursor to the top left position
 }
+
+
+//==========================================================================
+// Purpose: load the custom weapon binds for Serious Sam: Next Encounter
+//==========================================================================
+static void BINDS_Load(SERIOUSKEYS* keys)
+{
+	FILE *fileptr;
+	if((fileptr = fopen("SSNEBinds.ini", "r")) != NULL)
+	{
+		char line[256][256];
+		char lines[256];
+		uint8_t counter = 0;
+		uint8_t linenumber = 0;
+
+		// parses each line which has the format of "Weapon FirstHexKeycode SecondHexKeycode"
+		// keycodes are based on Virtual-Key Codes for Winuser.h (https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)
+		while(fgets(lines, sizeof(lines), fileptr) != NULL) 
+		{
+			if(linenumber < 2)
+			{
+				linenumber++;
+				continue; //skip first two lines because they are just instructions for the user
+			}
+
+			uint8_t offset = 0;
+
+			char *token = strtok(lines, " "); // separates each line into three strings
+
+			while (token != NULL)
+			{
+				strcpy(line[counter + offset], token); // adds each substring to the line array for use later
+				offset++;
+
+				if(offset > 3)
+				{
+					MessageBox(HWND_DESKTOP, "Cannot have more than two weapon binds for a single weapon/category.\n\nAttempting to create a clean ssnebinds.ini file.", "Error", MB_ICONERROR | MB_OK); // too many weapon bindings found
+					BINDS_Init(); // create ssnebinds.ini
+
+					BINDS_Load(keys); // try loading the binds again with the new file
+				}
+
+				token = strtok(NULL, " ");
+			}
+
+			if(offset != 3)
+			{
+				MessageBox(HWND_DESKTOP, "Insufficent weapon binds found (use NULL for empty bindings).\n\nAttempting to create a clean ssnebinds.ini file.", "Error", MB_ICONERROR | MB_OK); // too few weapon bindings found
+				BINDS_Init(); // create ssnebinds.ini
+
+				BINDS_Load(keys); // try loading the binds again with the new file
+			}
+
+			counter += 3;
+			linenumber++;
+		}
+
+		for(int i = 0; i < 24; i += 3)
+		{
+			uint8_t index = (i / 3) * 2; // finds the index of each byte in SERIOUSKEYS struct. prgama pack 1 is used so that there are no byte paddings
+
+			keys->K_Chainsaw[index] = 0x00;
+			keys->K_Chainsaw[index + 1] = 0x00;
+
+			if(strcmp(line[i + 1], "NULL\n") != 0)
+			{
+				keys->K_Chainsaw[index] = (uint8_t)strtol(line[i + 1], NULL, 16); //using pointer magic to assign the value of the primary weapon bind to each uint8_t array in the struct. K_Chainsaw[0] is the first index, which is why it's seen here.
+			}
+
+
+			if((strcmp(line[i + 2], "NULL\n") != 0) && (strcmp(line[i + 2], "NULL") != 0))
+			{
+				keys->K_Chainsaw[index + 1] = (uint8_t)strtol(line[i + 2], NULL, 16); //same as above but for the alt weapon binds.
+			}
+			
+		}
+	}
+	else
+	{
+		MessageBox(HWND_DESKTOP, "Loading ssnebinds.ini failed!\n\nAttempting to create ssnebinds.ini file.", "Error", MB_ICONERROR | MB_OK); // tell the user loading ssnebinds.ini failed
+		BINDS_Init(); // create ssnebinds.ini
+
+		BINDS_Load(keys); // try loading the binds again with the new file
+	}
+}
+
+static void BINDS_Init(void)
+{
+	FILE *fileptr; // create a file pointer and open ssnebinds.ini from same dir as our program
+	if((fileptr = fopen("ssnebinds.ini", "w")) != NULL) // if the INI exists
+	{
+		fprintf(fileptr, 
+			"# Format: \"Weapon_Name First_Bind_Keycode Second_Bind_Keycode\"\n"
+			"# Inputs are based on Virtual-Key Codes for Winuser.h (https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes). NULL is used for empty bindings\n"
+			"Chainsaw 0x31 NULL\n"
+			"Pistols 0x32 NULL\n"
+			"Shotgun 0x33 NULL\n"
+			"Bullets 0x34 NULL\n"
+			"Explosives 0x46 NULL\n"
+			"FlameRifle 0x58 0x06\n"
+			"CannonPowergun 0x43 0x05\n"
+			"Bomb 0xA4 NULL"
+		); // write current settings to ssnebinds.ini
+		fclose(fileptr); // close the file stream
+	}
+	else
+	{
+		perror("fopen");
+	}
+}
+
+
+
+
+
 //==========================================================================
 // Purpose: loads settings stored in mouseinjector.ini
 // Changes Globals: sensitivity, crosshair, invertpitch, locksettings, welcomed

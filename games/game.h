@@ -35,3 +35,4 @@ extern uint16_t GAME_Tickrate(void);
 extern uint8_t GAME_CrosshairSwaySupported(void);
 extern uint8_t GAME_OptionSupported(void);
 extern const char *GAME_OptionMessage(void);
+extern void GAME_DeInject();
