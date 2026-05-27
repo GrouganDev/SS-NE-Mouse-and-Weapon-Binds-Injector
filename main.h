@@ -27,7 +27,7 @@
 
 #define DOLPHINVERSION "Dolphin"
 #define BUILDINFO "(v0.31 - "__DATE__")"
-#define LINE "__________________________________________________________________"
+#define LINE "______________________________________________________________________________"
 // input for interface
 #define K_1 GetAsyncKeyState(0x31) // key '1'
 #define K_2 GetAsyncKeyState(0x32) // key '2'

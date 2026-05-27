@@ -36,6 +36,7 @@
 #define SERIOUS_fov 0x8133C99C - 0x8133C6A0
 // STATIC ADDRESSES BELOW
 #define SERIOUS_playerbase 0x802D8948 // playable character pointer
+#define SERIOUS_playerbase_PAL 0x802D9048 // PAL character pointer
 
 
 static const SERIOUSKEYS* KEYS;
@@ -61,8 +62,18 @@ const GAMEDRIVER *GAME_SERIOUS = &GAMEDRIVER_INTERFACE;
 //==========================================================================
 static uint8_t SERIOUS_Status(void)
 {
-	return (MEM_ReadUInt(0x80000000) == 0x47334245U && MEM_ReadUInt(0x80000004) == 0x39470001U); // check game header to see if it matches SERIOUS
+	return ((MEM_ReadUInt(0x80000000) == 0x47334245U && MEM_ReadUInt(0x80000004) == 0x39470001U) || (MEM_ReadUInt(0x80000000) == 0x47334250U && MEM_ReadUInt(0x80000004) == 0x39470000U)); // check game header to see if it matches SERIOUS
 }
+
+//==========================================================================
+// Purpose: return 1 if game is NTSC and 0 if PAL
+//==========================================================================
+static uint8_t SERIOUS_Region(void)
+{
+	return (MEM_ReadUInt(0x80000000) == 0x47334245U && MEM_ReadUInt(0x80000004) == 0x39470001U);
+}
+
+
 //==========================================================================
 // Purpose: calculate mouse look and inject into current game
 //==========================================================================
@@ -73,7 +84,8 @@ static void SERIOUS_Inject(void)
 
 	if(xmouse == 0 && ymouse == 0) // if mouse is idle
 		return;
-	const uint32_t playerbase = MEM_ReadUInt(SERIOUS_playerbase);
+	const uint32_t playerbase = (SERIOUS_Region() ? MEM_ReadUInt(SERIOUS_playerbase) : MEM_ReadUInt(SERIOUS_playerbase_PAL));
+
 	if(!playerbase) // if playerbase is invalid
 		return;
 

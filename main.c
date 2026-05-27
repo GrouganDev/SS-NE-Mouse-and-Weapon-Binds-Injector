@@ -286,7 +286,7 @@ static void GUI_Update(void)
 	// printf("\n Mouse Injector for %s %s - %s\n", GAME_Name(), BUILDINFO, hookedEmulatorName); // title
 	printf("\n Mouse Injector for %s - %s\n", hookedEmulatorName, GAME_Name()); // title
 	printf("%s\n\n   Main Menu - Press [#] to Use Menu\n\n\n", LINE);
-	printf(mousetoggle ? "   [4] - [ON] Mouse Injection\n\n" : "   [4] - [OFF] Mouse Injection\n\n");
+	printf(mousetoggle ? "   [Right Ctrl] - [ON] Mouse Injection\n\n" : "   [Right Ctrl] - [OFF] Mouse Injection\n\n");
 	if(!locksettings)
 	{
 		printf("   [5] - Mouse Sensitivity: %d%%", sensitivity * 5);
@@ -339,17 +339,17 @@ static void GUI_Update(void)
 static void GUI_ListGames(void)
 {
 	GUI_Clear();
-	printf("\n Supported Games (NTSC Only)\t\tGame IDs     Mouse Support\n%s\n\n", LINE);
-	printf("    TimeSplitters 2\t\t\t GTSE4F\t\t Fair\n\n");
-	printf("    TimeSplitters: Future Perfect\t G3FE69\t\t Poor\n\n");
-	printf("    007: NightFire\t\t\t GO7E69\t\t Poor\n\n");
-	printf("    Medal of Honor: Frontline\t\t GMFE69\t\t Fair\n\n");
-	printf("    Medal of Honor: European Assault\t GONE69\t\t Good\n\n");
-	printf("    Medal of Honor: Rising Sun\t\t GR8E69\t\t Poor\n\n");
-	printf("    Call of Duty 2: Big Red One\t\t GQCE52\t\t Good\n\n");
-	printf("    Die Hard: Vendetta\t\t\t GDIE7D\t\t Fair\n\n");
-	printf("    Serious Sam: Next Encounter\t\t G3BE9G\t\t Fair\n\n");
-	printf("    Trigger Man\t\t\t\t GG2E4Z\t\t Good\n\n");
+	printf("\n Supported Games (NTSC only except for SS:NE)\tGame IDs     Mouse Support\n%s\n\n", LINE);
+	printf("    TimeSplitters 2\t\t\t\t GTSE4F\t\t Fair\n\n");
+	printf("    TimeSplitters: Future Perfect\t\t G3FE69\t\t Poor\n\n");
+	printf("    007: NightFire\t\t\t\t GO7E69\t\t Poor\n\n");
+	printf("    Medal of Honor: Frontline\t\t\t GMFE69\t\t Fair\n\n");
+	printf("    Medal of Honor: European Assault\t\t GONE69\t\t Good\n\n");
+	printf("    Medal of Honor: Rising Sun\t\t\t GR8E69\t\t Poor\n\n");
+	printf("    Call of Duty 2: Big Red One\t\t\t GQCE52\t\t Good\n\n");
+	printf("    Die Hard: Vendetta\t\t\t\t GDIE7D\t\t Fair\n\n");
+	printf("    Serious Sam: Next Encounter\t\t     G3BE9G / G3BP9G\t Fair\n\n");
+	printf("    Trigger Man\t\t\t\t\t GG2E4Z\t\t Good\n\n");
 	printf("   Returning to Main Menu in 10 Seconds...\n%s\n", LINE);
 }
 //==========================================================================
