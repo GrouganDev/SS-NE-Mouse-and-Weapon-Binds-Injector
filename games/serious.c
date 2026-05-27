@@ -34,6 +34,26 @@
 #define SERIOUS_camx 0x8133C930 - 0x8133C6A0
 #define SERIOUS_camy 0x8133C934 - 0x8133C6A0
 #define SERIOUS_fov 0x8133C99C - 0x8133C6A0
+
+// bytes
+#define SERIOUS_grenades 0x2EED3
+#define SERIOUS_spidermines 0x2EED7
+#define SERIOUS_mines 0x2EED5
+#define SERIOUS_sonic_rockets 0x2EEDD
+#define SERIOUS_homing_rockets 0x2EEDB
+#define SERIOUS_rockets 0x2EED9
+#define SERIOUS_cannon 0x2EEE1
+#define SERIOUS_rifle 0x2EEC9
+
+// halfwords (2 bytes)
+#define SERIOUS_napalm 0x2EECC
+#define SERIOUS_freeze 0x2EECE
+#define SERIOUS_laughing_gas 0x2EED0
+#define SERIOUS_bullets 0x2EEC2
+#define SERIOUS_homing_bullets 0x2EEC4
+#define SERIOUS_reflect_bullets 0x2EEC6
+#define SERIOUS_energy 0x2EEDE
+
 // STATIC ADDRESSES BELOW
 #define SERIOUS_playerbase 0x802D8948 // playable character pointer
 #define SERIOUS_playerbase_PAL 0x802D9048 // PAL character pointer
@@ -138,9 +158,16 @@ static void SERIOUS_Code_Inject(void)
 	MEM_WriteInt(0x817D88b0, 0x61EF8868); //ori r15, r15, 0x8868 
 	MEM_WriteInt(0x817d88b4, 0x820F0000); //lwz r16, 0x00(r15) 
 	MEM_WriteInt(0x817d88b8, 0x7C10F000); //cmpw r16, r30 
-	MEM_WriteInt(0x817d88bc, 0x40820008); //bne 0x817d88a8 
+	MEM_WriteInt(0x817d88bc, 0x4082000C); //bne 0x817d88c8 
 	MEM_WriteInt(0x817d88c0, 0x921F05F8); //stw r16, 0x05F8(r31) 
 	MEM_WriteInt(0x817d88c4, 0x4e800020); //blr
+
+	//check if alt weapon is 1 below main weapon index
+	MEM_WriteInt(0x817d88c8, 0x3a3efffe); //subi r17, r30, 2 
+	MEM_WriteInt(0x817d88cc, 0x7c118000); //cmpw r17, r16 
+	MEM_WriteInt(0x817d88d0, 0x40820008); //bne 0x817d88d8 
+	MEM_WriteInt(0x817d88d4, 0x923f05f8); //stw r17, 0x05F8(r31)  
+	MEM_WriteInt(0x817d88d8, 0x4e800020); //blr 
 }
 
 //==========================================================================
@@ -171,6 +198,8 @@ WEAPON INDICES:
 0x0000000B - Serious Bomb
 */
 
+
+
 //==========================================================================
 // Purpose: checks key pressed according to 'KEYS' to set up new weapon to switch to
 //==========================================================================
@@ -181,10 +210,10 @@ static void SERIOUS_Weapon_Check(void)
 	if(!playerbase) // if playerbase is invalid
 		return;
 	
-	uint32_t currentweapon = MEM_ReadInt(playerbase + 0x05F8);
-	uint32_t previousweapon = currentweapon;
+	uint32_t currentweapon = MEM_ReadInt(0x817D8860);
+	uint32_t previousweapon = MEM_ReadInt(playerbase + 0x05F8);
 	
-	uint32_t altweapon = 0xFFFFFFFF;
+	uint32_t altweapon = MEM_ReadInt(0x817D8868);
 
 	if(KEYS->K_Chainsaw_Pressed || KEYS->K_Chainsaw_Alt_Pressed){
 		currentweapon = 0x00000000;
@@ -197,23 +226,65 @@ static void SERIOUS_Weapon_Check(void)
 	}
 	if(KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x00000002, 0x00000004, &currentweapon, &altweapon, previousweapon);
+
+		if(MEM_ReadUInt16(playerbase + SERIOUS_bullets) == 0 && MEM_ReadUInt16(playerbase + SERIOUS_reflect_bullets) == 0)
+		{
+			currentweapon = 0x00000004;
+			altweapon = 0x00000002;
+		}
+		else if(MEM_ReadUInt16(playerbase + SERIOUS_bullets) == 0 && MEM_ReadUInt16(playerbase + SERIOUS_homing_bullets) == 0)
+		{
+			currentweapon = 0x00000002;
+			altweapon = 0x00000004;
+		}
 	}
 	if(KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x00000006, 0x00000005, &currentweapon, &altweapon, previousweapon);
+
+		if(MEM_ReadUInt8(playerbase + SERIOUS_rockets) == 0 && MEM_ReadUInt8(playerbase + SERIOUS_homing_rockets) == 0 && MEM_ReadUInt8(playerbase + SERIOUS_sonic_rockets) == 0)
+		{
+			currentweapon = 0x00000005;
+			altweapon = 0x00000006;
+		}
+		else if(MEM_ReadUInt8(playerbase + SERIOUS_grenades) == 0 && MEM_ReadUInt8(playerbase + SERIOUS_mines) == 0 && MEM_ReadUInt8(playerbase + SERIOUS_spidermines) == 0)
+		{
+			currentweapon = 0x00000006;
+			altweapon = 0x00000005;
+		}
 	}
 	if(KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x00000007, 0x00000008, &currentweapon, &altweapon, previousweapon);
+
+		if(MEM_ReadUInt16(playerbase + SERIOUS_napalm) == 0 && MEM_ReadUInt16(playerbase + SERIOUS_freeze) == 0 && MEM_ReadUInt16(playerbase + SERIOUS_laughing_gas) == 0)
+		{
+			currentweapon = 0x00000008;
+			altweapon = 0x00000007;
+		}
+		else if(MEM_ReadUInt8(playerbase + SERIOUS_rifle) == 0)
+		{
+			currentweapon = 0x00000007;
+			altweapon = 0x00000008;
+		}
 	}
 	if(KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed){
 		SERIOUS_Assign_Weapon_Group(0x0000000A, 0x00000009, &currentweapon, &altweapon, previousweapon);
+
+		if(MEM_ReadUInt8(playerbase + SERIOUS_cannon) == 0)
+		{
+			currentweapon = 0x00000009;
+			altweapon = 0x0000000A;
+		}
+		else if(MEM_ReadUInt16(playerbase + SERIOUS_energy) == 0)
+		{
+			currentweapon = 0x0000000A;
+			altweapon = 0x00000009;
+		}
 	}
 	if(KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed){
 		currentweapon = 0x0000000B;
 	}
 
-	if(currentweapon != previousweapon){
-		SERIOUS_Update_Weapon(currentweapon, altweapon); // update memory to swap to selected weapon
-	}
+	SERIOUS_Update_Weapon(currentweapon, altweapon); // update memory to swap to selected weapon
 }
 
 //==========================================================================
@@ -221,7 +292,7 @@ static void SERIOUS_Weapon_Check(void)
 //==========================================================================
 static void SERIOUS_Assign_Weapon_Group(uint32_t first, uint32_t second, uint32_t* mainweapon, uint32_t* altweapon, uint32_t previousweapon)
 {	
-	if (previousweapon == first)
+	if (previousweapon == first || *mainweapon == first)
 	{
 		*mainweapon = second;
 		*altweapon = first;
@@ -231,6 +302,8 @@ static void SERIOUS_Assign_Weapon_Group(uint32_t first, uint32_t second, uint32_
 		*mainweapon = first;
 		*altweapon = second;
 	}
+
+	MEM_WriteInt(0x817D8868, *altweapon);
 }
 
 //==========================================================================
