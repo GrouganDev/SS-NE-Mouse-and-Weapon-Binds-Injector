@@ -176,7 +176,14 @@ WEAPON INDICES:
 //==========================================================================
 static void SERIOUS_Weapon_Check(void)
 {
-	uint32_t currentweapon = 0xFFFFFFFF;
+	const uint32_t playerbase = (SERIOUS_Region() ? MEM_ReadUInt(SERIOUS_playerbase) : MEM_ReadUInt(SERIOUS_playerbase_PAL));
+
+	if(!playerbase) // if playerbase is invalid
+		return;
+	
+	uint32_t currentweapon = MEM_ReadInt(playerbase + 0x05F8);
+	uint32_t previousweapon = currentweapon;
+	
 	uint32_t altweapon = 0xFFFFFFFF;
 
 	if(KEYS->K_Chainsaw_Pressed || KEYS->K_Chainsaw_Alt_Pressed){
@@ -189,22 +196,22 @@ static void SERIOUS_Weapon_Check(void)
 		currentweapon = 0x00000003;
 	}
 	if(KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed){
-		SERIOUS_Assign_Weapon_Group(0x00000002, 0x00000004, &currentweapon, &altweapon);
+		SERIOUS_Assign_Weapon_Group(0x00000002, 0x00000004, &currentweapon, &altweapon, previousweapon);
 	}
 	if(KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed){
-		SERIOUS_Assign_Weapon_Group(0x00000006, 0x00000005, &currentweapon, &altweapon);
+		SERIOUS_Assign_Weapon_Group(0x00000006, 0x00000005, &currentweapon, &altweapon, previousweapon);
 	}
 	if(KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed){
-		SERIOUS_Assign_Weapon_Group(0x00000007, 0x00000008, &currentweapon, &altweapon);
+		SERIOUS_Assign_Weapon_Group(0x00000007, 0x00000008, &currentweapon, &altweapon, previousweapon);
 	}
 	if(KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed){
-		SERIOUS_Assign_Weapon_Group(0x0000000A, 0x00000009, &currentweapon, &altweapon);
+		SERIOUS_Assign_Weapon_Group(0x0000000A, 0x00000009, &currentweapon, &altweapon, previousweapon);
 	}
 	if(KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed){
 		currentweapon = 0x0000000B;
 	}
 
-	if(currentweapon != 0xFFFFFFFF){
+	if(currentweapon != previousweapon){
 		SERIOUS_Update_Weapon(currentweapon, altweapon); // update memory to swap to selected weapon
 	}
 }
@@ -212,11 +219,9 @@ static void SERIOUS_Weapon_Check(void)
 //==========================================================================
 // Purpose: checks the player's current weapon to determine which weapon in the category is to be selected
 //==========================================================================
-static void SERIOUS_Assign_Weapon_Group(uint32_t first, uint32_t second, uint32_t* mainweapon, uint32_t* altweapon)
+static void SERIOUS_Assign_Weapon_Group(uint32_t first, uint32_t second, uint32_t* mainweapon, uint32_t* altweapon, uint32_t previousweapon)
 {	
-	uint32_t currentweapon = MEM_ReadInt(0x817D8860);
-
-	if (currentweapon == first)
+	if (previousweapon == first)
 	{
 		*mainweapon = second;
 		*altweapon = first;
