@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../seriousinputchecker.h"
+#include <stdarg.h>
 
 extern void UPDATE_Keys_Struct(SERIOUSKEYS* keys);
 extern void UPDATE_Serious_Keys(SERIOUSKEYS* keys);
