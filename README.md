@@ -2,7 +2,7 @@
 
 An external app that injects cursor input into game memory.
 
-This fork changes the hook toggle from ``4`` to ``Right Ctrl``. So far, that's literally it.
+This fork also adds functionality for proper PC-like weapon bindings for Serious Sam: Next Encounter. Functionality for the PAL version of the game was also added.
 
 ### *If you have a game request, please go to the 'Discussions' tab and post it!*
 ### _Scroll to bottom for_ <font color="red"> *FREQUENTLY ASKED QUESTIONS* </font>
@@ -36,7 +36,7 @@ This fork changes the hook toggle from ``4`` to ``Right Ctrl``. So far, that's l
 ## How to Use
 1. Start emulator first
 2. Start MouseInjector, read initial information then press ctrl+1
-3. Make sure game is running and press '4' to hook into the process
+3. Make sure game is running and press 'Right Ctrl' to hook into the process
     1. If game is supported then the mouse will be captured at the position it was at when hooked
         * You will be <b><u>unable</u></b> to use the mouse elsewhere while it is hooked, press right ctrl to unhook
         * Some games depend on post startup values/addresses so hook may not happen immediately
@@ -48,7 +48,50 @@ work very well if you have also mapped the mouse buttons as you may click off th
 recommended and with dual-monitors it is recommended to put the cursor in the corner before hooking to
 avoid clicking off the window.
 
-## Supported Dolphin Titles (NTSC Only)
+## Instructions for Serious Sam: Next Encounter 
+1. Find your 'Dolphin Emulator' settings folder
+	- By default, the path to it should be ``%appdata%\Dolphin Emulator`` or ``C:\Users\<yourusername>\AppData\Roaming\Dolphin Emulator`` 
+2. From there, open ``Config > Profiles > GCPad``
+3. Paste the ``Serious Sam.ini`` file into the folder
+4. Open the Dolphin Emulator
+5. Click on "Controllers" and then press "Configure" next to the your controller port (which is likely Port 1)
+6. Open the drop down menu near the upper right of the new window and select 'Serious Sam'
+7. Press the 'Load' button
+
+Once you have followed these steps, the custom weapon binds should work properly out of the box.
+
+## Default Weapon Bindings for Serious Sam: Next Encounter
+| Key          | Weapon(s)                 |
+| :------------: | :-------------------------: |
+| 1            | Chainsaw                  |
+| 2            | Pistol(s)                 |
+| 3            | Shotgun                   |
+| 4            | Uzis/Minigun              |
+| F            | Rocket/Grenade Launcher   |
+| X or Mouse 5 | Flamethrower/Sniper Rifle |
+| C or Mouse 4 | Cannon/Sirian Powergun    |
+| Left Alt     | Serious Bomb              |
+
+## Changing Weapon Bindings for Serious Sam: Next Encounter
+After you have opened the program and it hooks onto dolphin, a new file called ``ssnebinds.ini`` will be created. This is what keeps track of your weapon binds.
+
+1. Open ``ssnebinds.ini`` in any text editor
+	-	You will see that each line is formatted like this: ``"Weapon_Name First_Bind_Keycode Second_Bind_Keycode"``
+	-	Inputs are based on [Virtual-Key Codes for Winuser.h](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes). 
+	-	There must be both a first and second keycode for each line. If you only want to use one keycode instead of two, replace either the first or second keycode with ``NULL``.
+		-	**Example 1**: ``Shotgun 0x33 NULL`` means that ONLY the '3' key will be bound to the shotgun
+		-	**Example 2**: ``Shotgun 0x33 0x34`` means that both the '3' and '4' keys will be bound to the shotgun
+			-	**IMPORTANT NOTE**: Do not switch around the order of the weapons. Those labels are only there for your convenience and have no effect on the injector. Do not delete the labels either or else the injector will detect and error and create a new file with default bindings.
+
+\
+After you change your weapon binds in ``ssnebinds.ini``, you will also need to change your controller profile for dolphin
+
+1. Open your Gamecube controller config window on dolphin (if you don't know how to do that, read the instructions for 'Instructions for Serious Sam: Next Encounter' above)
+2. Find the configuration for the 'X' button on the Gamecube controller. You should see something akin to ``pulse(1|2|3|4|F...``. 
+3. Right click the text to open a new window.
+4. You should see a text box near the bottom of the new window which contains a function called ``pulse`` that then lists all of the original weapon binds for SS:NE. Change the keys to whatever you new bindings are.
+5. Close the new window and then save your new controller profile.
+## Supported Dolphin Titles (NTSC Only except for Serious Sam: Next Encounter)
 | Game Title | Mouse Support | Issues |
 | --- | :---: | ----------- |
 | 007: NightFire | Poor | <sup>Vehicle mode is semi-functional - last level is broken</sub> |

@@ -377,7 +377,7 @@ static void GUI_Clear(void)
 static void BINDS_Load(SERIOUSKEYS* keys)
 {
 	FILE *fileptr;
-	if((fileptr = fopen("SSNEBinds.ini", "r")) != NULL)
+	if((fileptr = fopen("ssnebinds.ini", "r")) != NULL)
 	{
 		char line[256][256];
 		char lines[256];
