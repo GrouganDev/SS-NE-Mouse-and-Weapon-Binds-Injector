@@ -17,15 +17,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
-#pragma once
-
 #include <string.h>
 #include <math.h>
-#include <windows.h>
 
 #define DOLPHINVERSION "Dolphin"
 #define BUILDINFO "(v0.31 - "__DATE__")"
-#define LINE "______________________________________________________________________________"
+#define LINE "__________________________________________________________________"
 // input for interface
 #define K_1 GetAsyncKeyState(0x31) // key '1'
 #define K_2 GetAsyncKeyState(0x32) // key '2'
@@ -41,12 +38,6 @@
 #define K_MINUS (GetAsyncKeyState(0x6D) || GetAsyncKeyState(0xBD)) // key '-'
 #define K_INSERT GetAsyncKeyState(0x2D) // key 'Insert'
 #define K_RCTRL GetAsyncKeyState(0xA3) // key 'Right Ctrl'
-#define M_XBUTTON1 GetAsyncKeyState(0x05) // mouse 'Back'
-#define M_XBUTTON2 GetAsyncKeyState(0x06) // mouse 'Forward'
-#define K_F GetAsyncKeyState(0x46) // key 'F'
-#define K_X GetAsyncKeyState(0x58) // key 'X'
-#define K_C GetAsyncKeyState(0x43) // key 'C'
-#define K_LALT GetAsyncKeyState(0xA4) // key 'Left Alt'
 #if _MSC_VER && !__INTEL_COMPILER // here because some MSVC versions only support __inline :/
 #define inline __inline
 #endif

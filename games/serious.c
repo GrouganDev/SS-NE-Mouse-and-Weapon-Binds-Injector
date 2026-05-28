@@ -18,13 +18,10 @@
 // along with this program; if not, visit http://www.gnu.org/licenses/gpl-2.0.html
 //==========================================================================
 #include <stdint.h>
+#include "../main.h"
 #include "../memory.h"
 #include "../mouse.h"
-#include "serious.h"
 #include "game.h"
-#include <stdio.h>
-#include <conio.h>
-#include "../seriousinputchecker.h"
 
 #define PI 3.14159265f // 0x40490FDB
 #define TAU 6.2831853f // 0x40C90FDB
@@ -34,53 +31,11 @@
 #define SERIOUS_camx 0x8133C930 - 0x8133C6A0
 #define SERIOUS_camy 0x8133C934 - 0x8133C6A0
 #define SERIOUS_fov 0x8133C99C - 0x8133C6A0
-
-// bytes
-#define SERIOUS_grenades 0x2EED3
-#define SERIOUS_spidermines 0x2EED7
-#define SERIOUS_mines 0x2EED5
-#define SERIOUS_sonic_rockets 0x2EEDD
-#define SERIOUS_homing_rockets 0x2EEDB
-#define SERIOUS_rockets 0x2EED9
-#define SERIOUS_cannons 0x2EEE1
-#define SERIOUS_rifle 0x2EEC9
-#define SERIOUS_shells 0x2EECB
-#define SERIOUS_bombs 0x2EEE3
-
-// halfwords (2 bytes)
-#define SERIOUS_napalm 0x2EECC
-#define SERIOUS_freeze 0x2EECE
-#define SERIOUS_laughing_gas 0x2EED0
-#define SERIOUS_bullets 0x2EEC2
-#define SERIOUS_homing_bullets 0x2EEC4
-#define SERIOUS_reflect_bullets 0x2EEC6
-#define SERIOUS_energy 0x2EEDE
-
 // STATIC ADDRESSES BELOW
 #define SERIOUS_playerbase 0x802D8948 // playable character pointer
-#define SERIOUS_playerbase_PAL 0x802D9048 // PAL character pointer
-
-// WEAPON INDICIES
-#define SERIOUS_chainsaw 0x00000000
-#define SERIOUS_pistols 0x00000001
-#define SERIOUS_uzis 0x00000002
-#define SERIOUS_shotgun 0x00000003
-#define SERIOUS_minigun 0x00000004
-#define SERIOUS_grenade_launcher 0x00000005
-#define SERIOUS_rocket_launcher 0x00000006
-#define SERIOUS_flamethrower 0x00000007
-#define SERIOUS_sniper_rifle 0x00000008
-#define SERIOUS_sirian_powergun 0x00000009
-#define SERIOUS_cannon 0x0000000A
-#define SERIOUS_bomb 0x0000000B
-
-
-static const SERIOUSKEYS* KEYS;
-
 
 static uint8_t SERIOUS_Status(void);
 static void SERIOUS_Inject(void);
-
 
 static const GAMEDRIVER GAMEDRIVER_INTERFACE =
 {
@@ -98,33 +53,18 @@ const GAMEDRIVER *GAME_SERIOUS = &GAMEDRIVER_INTERFACE;
 //==========================================================================
 static uint8_t SERIOUS_Status(void)
 {
-	return ((MEM_ReadUInt(0x80000000) == 0x47334245U && MEM_ReadUInt(0x80000004) == 0x39470001U) || (MEM_ReadUInt(0x80000000) == 0x47334250U && MEM_ReadUInt(0x80000004) == 0x39470000U)); // check game header to see if it matches SERIOUS
+	return (MEM_ReadUInt(0x80000000) == 0x47334245U && MEM_ReadUInt(0x80000004) == 0x39470001U); // check game header to see if it matches SERIOUS
 }
-
-//==========================================================================
-// Purpose: return 1 if game is NTSC and 0 if PAL
-//==========================================================================
-static uint8_t SERIOUS_Region(void)
-{
-	return (MEM_ReadUInt(0x80000000) == 0x47334245U && MEM_ReadUInt(0x80000004) == 0x39470001U);
-}
-
-
 //==========================================================================
 // Purpose: calculate mouse look and inject into current game
 //==========================================================================
 static void SERIOUS_Inject(void)
 {
-	SERIOUS_Code_Inject();
-	SERIOUS_Weapon_Check();
-
 	if(xmouse == 0 && ymouse == 0) // if mouse is idle
 		return;
-	const uint32_t playerbase = (SERIOUS_Region() ? MEM_ReadUInt(SERIOUS_playerbase) : MEM_ReadUInt(SERIOUS_playerbase_PAL));
-
+	const uint32_t playerbase = MEM_ReadUInt(SERIOUS_playerbase);
 	if(!playerbase) // if playerbase is invalid
 		return;
-
 	const float looksensitivity = (float)sensitivity / 40.f;
 	const float fov = MEM_ReadFloat(playerbase + SERIOUS_fov);
 	float camx = MEM_ReadFloat(playerbase + SERIOUS_camx);
@@ -141,279 +81,4 @@ static void SERIOUS_Inject(void)
 		MEM_WriteFloat(playerbase + SERIOUS_camx, camx);
 		MEM_WriteFloat(playerbase + SERIOUS_camy, camy);
 	}
-}
-
-//==========================================================================
-// Purpose: injects custom assembly code into dolphin in order to allow for custom weapon binds
-//==========================================================================
-static void SERIOUS_Code_Inject(void)
-{
-	MEM_WriteInt(0x800c5aa0, 0x49712D95); //bl 0x817d8834
-	MEM_WriteInt(0x817d8834, 0x3DE0817D); //lis r15, 0x817D 
-	MEM_WriteInt(0x817d8838, 0x61EF885C); //ori r15, r15, 0x885C 
-	MEM_WriteInt(0x817d883c, 0x83CF0000); //lwz r30, 0x00(r15) 
-	MEM_WriteInt(0x817d8840, 0x4e800020); //blr
-
-
-	//branch if the game plans to swap weapons
-	MEM_WriteInt(0x800c5afc, 0x49712D95); //bl 0x817d8890 
-
-	//load current weapon index into r16
-	MEM_WriteInt(0x817d8890, 0x3DE0817D); //lis r15, 0x817D 
-	MEM_WriteInt(0x817d8894, 0x61EF8860); //ori r15, r15, 0x8860 
-	MEM_WriteInt(0x817d8898, 0x820F0000); //lwz r16, 0x00(r15) 
-
-	//Compare r30 to r16 and swap to new weapon if equal. Check alt weapon otherwise
-	MEM_WriteInt(0x817d889c, 0x7C10F000); //cmpw r16, r30 
-	MEM_WriteInt(0x817d88a0, 0x4082000C); //bne 0x817d88a8 
-	MEM_WriteInt(0x817d88a4, 0x93DF05F8); //stw r30, 0x05F8(r31) 
-	MEM_WriteInt(0x817d88a8, 0x4e800020); //blr
-
-	//check alt weapon (address 0x817D8868)
-	MEM_WriteInt(0x817d88ac, 0x3DE0817D); //lis r15, 0x817D 
-	MEM_WriteInt(0x817D88b0, 0x61EF8868); //ori r15, r15, 0x8868 
-	MEM_WriteInt(0x817d88b4, 0x820F0000); //lwz r16, 0x00(r15) 
-	MEM_WriteInt(0x817d88b8, 0x7C10F000); //cmpw r16, r30 
-	MEM_WriteInt(0x817d88bc, 0x4082000C); //bne 0x817d88c8 
-	MEM_WriteInt(0x817d88c0, 0x921F05F8); //stw r16, 0x05F8(r31) 
-	MEM_WriteInt(0x817d88c4, 0x4e800020); //blr
-
-	//check if alt weapon is 1 below main weapon index
-	MEM_WriteInt(0x817d88c8, 0x3a3efffe); //subi r17, r30, 2 
-	MEM_WriteInt(0x817d88cc, 0x7c118000); //cmpw r17, r16 
-	MEM_WriteInt(0x817d88d0, 0x40820008); //bne 0x817d88d8 
-	MEM_WriteInt(0x817d88d4, 0x923f05f8); //stw r17, 0x05F8(r31)  
-	MEM_WriteInt(0x817d88d8, 0x4e800020); //blr 
-}
-
-//==========================================================================
-// Purpose: restores original assembly instructions where overwritten
-//==========================================================================
-void SERIOUS_Code_DeInject(void)
-{
-	MEM_WriteInt(0x800c5aa0, 0x83df05f8); //lwz r30, 0x05F8 (r31)
-    MEM_WriteInt(0x800c5afc, 0x93df05f8); //stw r30, 0x05F8 (r31)
-}
-
-
-
-
-
-//==========================================================================
-// Purpose: checks key pressed according to 'KEYS' to set up new weapon to switch to
-//==========================================================================
-static void SERIOUS_Weapon_Check(void)
-{
-	const uint32_t playerbase = (SERIOUS_Region() ? MEM_ReadUInt(SERIOUS_playerbase) : MEM_ReadUInt(SERIOUS_playerbase_PAL));
-
-	if(!playerbase) // if playerbase is invalid
-		return;
-	
-	uint32_t currentweapon = MEM_ReadInt(0x817D8860);
-	uint32_t previousweapon = MEM_ReadInt(playerbase + 0x05F8);
-	uint32_t altweapon = MEM_ReadInt(0x817D8868);
-
-
-	uint8_t shotgunhasammo = MEM_ReadUInt8(playerbase + SERIOUS_shells);
-	uint16_t uzishasammo = MEM_ReadUInt16(playerbase + SERIOUS_bullets) || MEM_ReadUInt16(playerbase + SERIOUS_reflect_bullets);
-	uint16_t minigunhasammo = MEM_ReadUInt16(playerbase + SERIOUS_bullets) || MEM_ReadUInt16(playerbase + SERIOUS_homing_bullets);
-	uint8_t rockethasammo = MEM_ReadUInt8(playerbase + SERIOUS_rockets) || MEM_ReadUInt8(playerbase + SERIOUS_homing_rockets) || MEM_ReadUInt8(playerbase + SERIOUS_sonic_rockets);
-	uint8_t grenadehasammo = MEM_ReadUInt8(playerbase + SERIOUS_grenades) || MEM_ReadUInt8(playerbase + SERIOUS_mines) || MEM_ReadUInt8(playerbase + SERIOUS_spidermines);
-	uint16_t flamerhasammo = MEM_ReadUInt16(playerbase + SERIOUS_napalm) || MEM_ReadUInt16(playerbase + SERIOUS_freeze) || MEM_ReadUInt16(playerbase + SERIOUS_laughing_gas);
-	uint8_t sniperhasammo = MEM_ReadUInt8(playerbase + SERIOUS_rifle);
-	uint8_t cannonhasammo = MEM_ReadUInt8(playerbase + SERIOUS_cannons);
-	uint16_t powergunhasammo = MEM_ReadUInt16(playerbase + SERIOUS_energy);
-	uint8_t bombhasammo = MEM_ReadUInt8(playerbase + SERIOUS_bombs);
-
-	if(KEYS->K_Chainsaw_Pressed || KEYS->K_Chainsaw_Alt_Pressed){
-		currentweapon = SERIOUS_chainsaw;
-	}
-
-	if(KEYS->K_Pistols_Pressed || KEYS->K_Pistols_Alt_Pressed){
-		currentweapon = SERIOUS_pistols;
-	}
-
-	if((KEYS->K_Shotgun_Pressed || KEYS->K_Shotgun_Alt_Pressed) && shotgunhasammo){
-		currentweapon = SERIOUS_shotgun;
-	}
-
-	if((KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed) && (uzishasammo || minigunhasammo))
-		{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_uzis, SERIOUS_minigun, &currentweapon, &altweapon, previousweapon);
-
-		if(!uzishasammo)
-		{
-			currentweapon = SERIOUS_minigun;
-			altweapon = SERIOUS_uzis;
-		}
-		else if(!minigunhasammo)
-		{
-			currentweapon = SERIOUS_uzis;
-			altweapon = SERIOUS_minigun;
-		}
-	}
-
-	if((KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed) && (rockethasammo || grenadehasammo))
-	{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_rocket_launcher, SERIOUS_grenade_launcher, &currentweapon, &altweapon, previousweapon);
-
-		if(!rockethasammo)
-		{
-			currentweapon = SERIOUS_grenade_launcher;
-			altweapon = SERIOUS_rocket_launcher;
-		}
-		else if(!grenadehasammo)
-		{
-			currentweapon = SERIOUS_rocket_launcher;
-			altweapon = SERIOUS_grenade_launcher;
-		}
-	}
-
-	if((KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed) && (flamerhasammo || sniperhasammo)) 
-	{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_flamethrower, SERIOUS_sniper_rifle, &currentweapon, &altweapon, previousweapon);
-
-		if(!flamerhasammo)
-		{
-			currentweapon = SERIOUS_sniper_rifle;
-			altweapon = SERIOUS_flamethrower;
-		}
-		else if(!sniperhasammo)
-		{
-			currentweapon = SERIOUS_flamethrower;
-			altweapon = SERIOUS_sniper_rifle;
-		}
-	}
-
-	if((KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed) && (cannonhasammo || powergunhasammo))
-	{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_cannon, SERIOUS_sirian_powergun, &currentweapon, &altweapon, previousweapon);
-
-		if(!cannonhasammo)
-		{
-			currentweapon = SERIOUS_sirian_powergun;
-			altweapon = SERIOUS_cannon;
-		}
-		else if(!powergunhasammo)
-		{
-			currentweapon = SERIOUS_cannon;
-			altweapon = SERIOUS_sirian_powergun;
-		}
-	}
-
-	if((KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed) && bombhasammo){
-		currentweapon = SERIOUS_bomb;
-	}
-
-	SERIOUS_Update_Weapon(currentweapon, altweapon); // update memory to swap to selected weapon
-}
-
-//==========================================================================
-// Purpose: checks the player's current weapon to determine which weapon in the category is to be selected
-//==========================================================================
-static void SERIOUS_Assign_Weapon_Group(uint32_t first, uint32_t second, uint32_t* mainweapon, uint32_t* altweapon, uint32_t previousweapon)
-{	
-	if (previousweapon == first || *mainweapon == first)
-	{
-		*mainweapon = second;
-		*altweapon = first;
-	}
-	else
-	{
-		*mainweapon = first;
-		*altweapon = second;
-	}
-
-	MEM_WriteInt(0x817D8868, *altweapon);
-}
-
-//==========================================================================
-// Purpose: updates necessary regions of memory to contain the new weapon index for gameplay
-//==========================================================================
-static void SERIOUS_Update_Weapon(uint32_t mainweapon, uint32_t altweapon)
-{
-	uint32_t clampedweaponind = (((int32_t)mainweapon - 1) % 12);
-
-	MEM_WriteInt(0x817D885C, clampedweaponind);
-
-	MEM_WriteInt(0x817D8860, mainweapon);
-
-	MEM_WriteInt(0x817D8868, altweapon);
-}
-
-
-//==========================================================================
-// Purpose: sets the 'KEYS' pointer to point to main.c's 'keys'
-//==========================================================================
-void UPDATE_Keys_Struct(SERIOUSKEYS* keys){
-	KEYS = keys;
-}
-
-
-//==========================================================================
-// Purpose: large function to check the status of every key for weapon binds
-//==========================================================================
-void UPDATE_Serious_Keys(SERIOUSKEYS* keys)
-{
-	SEARCH_Serious_Keys(&keys->K_Chainsaw_Pressed, &keys->K_Chainsaw_Last_Pressed, &keys->K_Chainsaw_Alt_Pressed, &keys->K_Chainsaw_Alt_Last_Pressed, &keys->K_Chainsaw[0]);
-
-	SEARCH_Serious_Keys(&keys->K_Pistols_Pressed, &keys->K_Pistols_Last_Pressed, &keys->K_Pistols_Alt_Pressed, &keys->K_Pistols_Alt_Last_Pressed, &keys->K_Pistols[0]);
-
-	SEARCH_Serious_Keys(&keys->K_Shotgun_Pressed, &keys->K_Shotgun_Last_Pressed, &keys->K_Shotgun_Alt_Pressed, &keys->K_Shotgun_Alt_Last_Pressed, &keys->K_Shotgun[0]);
-
-	SEARCH_Serious_Keys(&keys->K_Bullets_Pressed, &keys->K_Bullets_Last_Pressed, &keys->K_Bullets_Alt_Pressed, &keys->K_Bullets_Alt_Last_Pressed, &keys->K_Bullets[0]);
-
-	SEARCH_Serious_Keys(&keys->K_Explosives_Pressed, &keys->K_Explosives_Last_Pressed, &keys->K_Explosives_Alt_Pressed, &keys->K_Explosives_Alt_Last_Pressed, &keys->K_Explosives[0]);
-
-	SEARCH_Serious_Keys(&keys->K_FlameRifle_Pressed, &keys->K_FlameRifle_Last_Pressed, &keys->K_FlameRifle_Alt_Pressed, &keys->K_FlameRifle_Alt_Last_Pressed, &keys->K_FlameRifle[0]);
-
-	SEARCH_Serious_Keys(&keys->K_CannonPowergun_Pressed, &keys->K_CannonPowergun_Last_Pressed, &keys->K_CannonPowergun_Alt_Pressed, &keys->K_CannonPowergun_Alt_Last_Pressed, &keys->K_CannonPowergun[0]);
-
-	SEARCH_Serious_Keys(&keys->K_Bomb_Pressed, &keys->K_Bomb_Last_Pressed, &keys->K_Bomb_Alt_Pressed, &keys->K_Bomb_Alt_Last_Pressed, &keys->K_Bomb[0]);
-}
-
-//==========================================================================
-// Purpose: checks to see if there are null values in either the primary or alt weapon keybinds before then checking for that key's status
-//==========================================================================
-void SEARCH_Serious_Keys(bool *pressed, bool *last_pressed, bool *alt_pressed, bool *alt_last_pressed, uint8_t ls[])
-{
-	if(ls[0] != 0x00)
-	{
-		CHECK_Key(pressed, last_pressed, GetAsyncKeyState(ls[0]));
-	}
-	else
-	{
-		*pressed = false;
-		*last_pressed = false;
-	}
-
-
-	if(ls[1] != 0x00)
-	{
-		CHECK_Key(alt_pressed, alt_last_pressed, GetAsyncKeyState(ls[1]));
-	}
-	else
-	{
-		*alt_pressed = false;
-		*alt_last_pressed = false;
-	}
-}
-
-//==========================================================================
-// Purpose: determines the status of a key press with the purpose of only detecting if a key was JUST pressed
-//==========================================================================
-void CHECK_Key(bool *pressed, bool *last_pressed, SHORT key){
-    if(key && !*last_pressed){ // key was just pressed and was not being previously held down
-        *last_pressed = true;
-        *pressed = true;
-    }
-    else if(!key) // key was not pressed
-    {
-        *last_pressed = false;
-        *pressed = false;
-    }
-    else if(*last_pressed) // key is being held down
-    {
-        *pressed = false;
-    }
 }
