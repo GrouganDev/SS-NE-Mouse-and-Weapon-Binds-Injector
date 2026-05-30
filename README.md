@@ -10,6 +10,30 @@ The program only works for the <b>GAMECUBE</b> version of the game. PS2 support 
 ### *If you have a game request, please go to the 'Discussions' tab of the [original repo]((https://github.com/garungorp/MouseInjectorDolphinDuck)) and post it!*
 ### _Scroll to bottom for_ <font color="red"> *FREQUENTLY ASKED QUESTIONS* </font>
 
+## Default Weapon Bindings for Serious Sam: Next Encounter
+| Key          | Weapon(s)                 |
+| :------------: | :-------------------------: |
+| 1            | Chainsaw                  |
+| 2            | Pistol(s)                 |
+| 3            | Shotgun                   |
+| 4            | Uzis/Minigun              |
+| F            | Rocket/Grenade Launcher   |
+| X or Mouse 5 | Flamethrower/Sniper Rifle |
+| C or Mouse 4 | Cannon/Sirian Powergun    |
+| Left Alt     | Serious Bomb              |
+
+These weapon binds should work straight out of the box when you open up the game in dolphin.
+
+## Changing Weapon Bindings for Serious Sam: Next Encounter
+After you have opened the program and it hooks onto dolphin, a new file called ``ssnebinds.ini`` will be created. This is what keeps track of your weapon binds.
+
+1. Open ``ssnebinds.ini`` in any text editor
+	-	You will see that each line is formatted like this: ``"Weapon_Name First_Bind_Keycode Second_Bind_Keycode"``
+	-	Inputs are based on [Virtual-Key Codes for Winuser.h](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes). 
+	-	There must be both a first and second keycode for each line. If you only want to use one keycode instead of two, replace either the first or second keycode with ``NULL``.
+		-	**Example 1**: ``Shotgun 0x33 NULL`` means that ONLY the '3' key will be bound to the shotgun
+		-	**Example 2**: ``Shotgun 0x33 0x34`` means that both the '3' and '4' keys will be bound to the shotgun
+			-	**IMPORTANT NOTE**: Do not switch around the order of the weapons. Those labels are only there for your convenience and have no effect on the injector. Do not delete the labels either or else the injector will detect and error and create a new file with default bindings.
 
 ## Supported Emulators
 | Emulator/Frontend | Version | Executable name (case sensitive) |
@@ -51,30 +75,6 @@ work very well if you have also mapped the mouse buttons as you may click off th
 recommended and with dual-monitors it is recommended to put the cursor in the corner before hooking to
 avoid clicking off the window.
 
-## Default Weapon Bindings for Serious Sam: Next Encounter
-| Key          | Weapon(s)                 |
-| :------------: | :-------------------------: |
-| 1            | Chainsaw                  |
-| 2            | Pistol(s)                 |
-| 3            | Shotgun                   |
-| 4            | Uzis/Minigun              |
-| F            | Rocket/Grenade Launcher   |
-| X or Mouse 5 | Flamethrower/Sniper Rifle |
-| C or Mouse 4 | Cannon/Sirian Powergun    |
-| Left Alt     | Serious Bomb              |
-
-These weapon binds should work straight out of the box when you open up the game in dolphin.
-
-## Changing Weapon Bindings for Serious Sam: Next Encounter
-After you have opened the program and it hooks onto dolphin, a new file called ``ssnebinds.ini`` will be created. This is what keeps track of your weapon binds.
-
-1. Open ``ssnebinds.ini`` in any text editor
-	-	You will see that each line is formatted like this: ``"Weapon_Name First_Bind_Keycode Second_Bind_Keycode"``
-	-	Inputs are based on [Virtual-Key Codes for Winuser.h](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes). 
-	-	There must be both a first and second keycode for each line. If you only want to use one keycode instead of two, replace either the first or second keycode with ``NULL``.
-		-	**Example 1**: ``Shotgun 0x33 NULL`` means that ONLY the '3' key will be bound to the shotgun
-		-	**Example 2**: ``Shotgun 0x33 0x34`` means that both the '3' and '4' keys will be bound to the shotgun
-			-	**IMPORTANT NOTE**: Do not switch around the order of the weapons. Those labels are only there for your convenience and have no effect on the injector. Do not delete the labels either or else the injector will detect and error and create a new file with default bindings.
 ## Supported Dolphin Titles (NTSC Only except for Serious Sam: Next Encounter)
 | Game Title | Mouse Support | Issues |
 | --- | :---: | ----------- |
