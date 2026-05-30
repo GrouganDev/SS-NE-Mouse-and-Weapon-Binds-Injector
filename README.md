@@ -1,11 +1,11 @@
 
 # Serious Sam: Next Encounter Weapon Binds for Dolphin Mouse Injector
 
-This was a fork and is now a standalone modification of [garungorp's Mouse Injector](https://github.com/garungorp/MouseInjectorDolphinDuck)
+A fork and now a standalone modification of [garungorp's Mouse Injector](https://github.com/garungorp/MouseInjectorDolphinDuck)
 
 This version adds functionality for proper PC-like weapon bindings for Serious Sam: Next Encounter. Compatibility for the PAL version of the game was also added.
 
-This only works for the <b>GAMECUBE</b> version of the game. PS2 support is currently not implemented, and there are no plans to do so for the foreseeable future.
+The program only works for the <b>GAMECUBE</b> version of the game. PS2 support is currently not implemented, and there are no plans to do so for the foreseeable future.
 
 ### *If you have a game request, please go to the 'Discussions' tab of the [original repo]((https://github.com/garungorp/MouseInjectorDolphinDuck)) and post it!*
 ### _Scroll to bottom for_ <font color="red"> *FREQUENTLY ASKED QUESTIONS* </font>
