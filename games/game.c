@@ -429,15 +429,6 @@ const char *GAME_OptionMessage(void)
 	return "Option not supported";
 }
 
-
-void GAME_DeInject()
-{
-	if (CURRENT_GAME == GAME_SERIOUS)
-	{
-		SERIOUS_Code_DeInject();
-	}
-}
-
 // const void *GAME_ChangeOptionMessage(char* newMessage)
 // {
 // 	if (CURRENT_GAME != NULL)

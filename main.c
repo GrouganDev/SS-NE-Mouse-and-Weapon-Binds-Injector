@@ -26,6 +26,7 @@
 #include "./games/game.h"
 #include <stdio.h>
 #include "main.h"
+#include <direct.h>
 
 #include "seriousinputchecker.h"
 #include "./games/serious.h"
@@ -159,7 +160,6 @@ int32_t main(void)
 //==========================================================================
 static void quit(void)
 {
-	GAME_DeInject();
 	INI_Save(0);
 	MOUSE_Quit();
 	MEM_Quit();
@@ -217,7 +217,6 @@ static void GUI_Interact(void)
 	{
 		MOUSE_Lock();
 		MOUSE_Update(GAME_Tickrate());
-		GAME_DeInject();
 		mousetoggle = !mousetoggle;
 		updateinterface = 1;
 	}
