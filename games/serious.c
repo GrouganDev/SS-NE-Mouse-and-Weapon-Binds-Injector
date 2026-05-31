@@ -36,6 +36,8 @@
 #define SERIOUS_fov 0x8133C99C - 0x8133C6A0
 #define SERIOUS_current_weapon 0x5DC
 #define SERIOUS_weapon_bar_visibility 0x60C
+#define SERIOUS_weapon_bar_timer 0x610
+#define SERIOUS_chosen_weapon_holder 0x24F44
 
 #define SERIOUS_has_chainsaw 0x4CF
 #define SERIOUS_has_pistol 0x4E7
@@ -248,17 +250,17 @@ static void SERIOUS_Weapon_Check(void)
 
 	uint8_t allweapons = region ? MEM_ReadUInt8(SERIOUS_weapons_cheat) : MEM_ReadUInt8(SERIOUS_weapons_cheat_PAL);
 
-	uint32_t currentweapon = MEM_ReadInt(0x817D8860);
-	uint32_t previousweapon = MEM_ReadInt(playerbase + 0x05F8);
+	uint32_t desiredweapon = MEM_ReadInt(playerbase + SERIOUS_chosen_weapon_holder);
+	uint32_t currentweapon = MEM_ReadInt(playerbase + 0x05F8);
+
+	if(desiredweapon < SERIOUS_chainsaw || desiredweapon > SERIOUS_bomb)
+	{
+		desiredweapon = SERIOUS_pistols; // make sure weapon variables stay in range
+	}
 
 	if(currentweapon < SERIOUS_chainsaw || currentweapon > SERIOUS_bomb)
 	{
 		currentweapon = SERIOUS_pistols; // make sure weapon variables stay in range
-	}
-
-	if(previousweapon < SERIOUS_chainsaw || previousweapon > SERIOUS_bomb)
-	{
-		previousweapon = SERIOUS_pistols; // make sure weapon variables stay in range
 	}
 
 	uint8_t offset = (MEM_ReadUInt16(playerbase + SERIOUS_bullets) == 17778) ? 0x40 : 0x00; // checks if there is an offset for the pointer which checks weapon ammo (only true in the Roman temple levels)
@@ -292,130 +294,155 @@ static void SERIOUS_Weapon_Check(void)
 	uint8_t hasweaponindex[] = {haschainsaw, haspistol, hasuzis, hasshotgun, hasminigun, hasgrenadelauncher, hasrocketlauncher, hasflamer, hassniper, haspowergun, hascannon, bombhasammo};
 	
 
-	uint8_t isvalidweapon = ammoindex[previousweapon] && (allweapons || hasweaponindex[previousweapon]); // checks if the weapon the currently in-game equipped weapon is actually in the player's inventory and has ammo
+	uint8_t isvalidweapon = ammoindex[currentweapon] && (allweapons || hasweaponindex[currentweapon]); // checks if the currently in-game equipped weapon is actually in the player's inventory and has ammo
 
 	if(!isvalidweapon)
 	{
-		currentweapon = previousweapon;
-		currentweapon = (currentweapon == SERIOUS_chainsaw) ? SERIOUS_bomb : (currentweapon - 1); // set the queued up weapon to be the index below the invalid weapon (will run each frame until a valid weapon is found)
+		desiredweapon = currentweapon;
+		desiredweapon = (desiredweapon == SERIOUS_chainsaw) ? SERIOUS_bomb : (desiredweapon - 1); // set the queued up weapon to be the index below the invalid weapon (will run each frame until a valid weapon is found)
 	}
 
 
 
-
+	// CHECK KEYS
 	if((KEYS->K_Chainsaw_Pressed || KEYS->K_Chainsaw_Alt_Pressed) && haschainsaw){
-		currentweapon = SERIOUS_chainsaw;
+		desiredweapon = SERIOUS_chainsaw;
 	}
 
 	if((KEYS->K_Pistols_Pressed || KEYS->K_Pistols_Alt_Pressed) && haspistol){
-		currentweapon = SERIOUS_pistols;
+		desiredweapon = SERIOUS_pistols;
 	}
 
 	if((KEYS->K_Shotgun_Pressed || KEYS->K_Shotgun_Alt_Pressed) && shotgunhasammo && hasshotgun){
-		currentweapon = SERIOUS_shotgun;
+		desiredweapon = SERIOUS_shotgun;
 		
 	}
 
 	if((KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed) && ((uzishasammo && hasuzis) || (minigunhasammo && hasminigun)))
 		{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_minigun, SERIOUS_uzis, &currentweapon, previousweapon);
+		SERIOUS_Assign_Weapon_Group(SERIOUS_minigun, SERIOUS_uzis, &desiredweapon, currentweapon);
 
 		if(!(uzishasammo && hasuzis))
 		{
-			currentweapon = SERIOUS_minigun;
+			desiredweapon = SERIOUS_minigun;
 		}
 		else if(!(minigunhasammo && hasminigun))
 		{
-			currentweapon = SERIOUS_uzis;
+			desiredweapon = SERIOUS_uzis;
 		}
 	}
 
 	if((KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed) && ((rockethasammo && hasrocketlauncher) || (grenadehasammo && hasgrenadelauncher)))
 	{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_rocket_launcher, SERIOUS_grenade_launcher, &currentweapon, previousweapon);
+		SERIOUS_Assign_Weapon_Group(SERIOUS_rocket_launcher, SERIOUS_grenade_launcher, &desiredweapon, currentweapon);
 
 		if(!(rockethasammo && hasrocketlauncher))
 		{
-			currentweapon = SERIOUS_grenade_launcher;
+			desiredweapon = SERIOUS_grenade_launcher;
 		}
 		else if(!(grenadehasammo && hasgrenadelauncher))
 		{
-			currentweapon = SERIOUS_rocket_launcher;
+			desiredweapon = SERIOUS_rocket_launcher;
 		}
 	}
 
 	if((KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed) && ((flamerhasammo && hasflamer) || (sniperhasammo && hassniper))) 
 	{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_flamethrower, SERIOUS_sniper_rifle, &currentweapon, previousweapon);
+		SERIOUS_Assign_Weapon_Group(SERIOUS_flamethrower, SERIOUS_sniper_rifle, &desiredweapon, currentweapon);
 
 		if(!(flamerhasammo && hasflamer))
 		{
-			currentweapon = SERIOUS_sniper_rifle;
+			desiredweapon = SERIOUS_sniper_rifle;
 		}
 		else if(!(sniperhasammo && hassniper))
 		{
-			currentweapon = SERIOUS_flamethrower;
+			desiredweapon = SERIOUS_flamethrower;
 		}
 	}
 
 	if((KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed) && ((cannonhasammo && hascannon) || (powergunhasammo && haspowergun)))
 	{
-		SERIOUS_Assign_Weapon_Group(SERIOUS_cannon, SERIOUS_sirian_powergun, &currentweapon, previousweapon);
+		SERIOUS_Assign_Weapon_Group(SERIOUS_cannon, SERIOUS_sirian_powergun, &desiredweapon, currentweapon);
 
 		if(!(cannonhasammo && hascannon))
 		{
-			currentweapon = SERIOUS_sirian_powergun;
+			desiredweapon = SERIOUS_sirian_powergun;
 		}
 		else if(!(powergunhasammo && haspowergun))
 		{
-			currentweapon = SERIOUS_cannon;
+			desiredweapon = SERIOUS_cannon;
 		}
 	}
 
 	if((KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed) && bombhasammo){
-		currentweapon = SERIOUS_bomb;
+		desiredweapon = SERIOUS_bomb;
 	}
+
+
+
+
 
 	if(KEYS->any_key_just_pressed)
 	{
-		if((MEM_ReadInt(playerbase + SERIOUS_current_weapon) != MEM_ReadInt(playerbase + 0x05F8) || MEM_ReadInt(playerbase + SERIOUS_current_weapon) != MEM_ReadInt(0x817D8860)))
-		{
-			MEM_WriteInt(0x817D8860, 0xFFFFFFFF); // force change to desired weapon if weapon tracking variables are not up to date with the current weapon
-		}
-
-		if(!MEM_ReadInt(playerbase + SERIOUS_weapon_bar_visibility))
-		{
-			MEM_WriteInt(playerbase + SERIOUS_weapon_bar_visibility, 1); // make weapon bar visible if it isn't already visible
-		}
+		SERIOUS_Update_Banner(playerbase);
 	}
 	
-	SERIOUS_Update_Weapon(currentweapon); // update memory to swap to selected weapon
+	if(MEM_ReadInt(playerbase + SERIOUS_chosen_weapon_holder) != desiredweapon)
+	{
+		SERIOUS_Update_Weapon(desiredweapon, playerbase, region); // update memory to swap to selected weapon
+	}
 }
 
 //==========================================================================
 // Purpose: updates necessary regions of memory to contain the new weapon index for gameplay
 //==========================================================================
-static void SERIOUS_Update_Weapon(uint32_t mainweapon)
+static void SERIOUS_Update_Weapon(uint32_t mainweapon, uint32_t playerbase, uint8_t region)
 {
-	uint8_t region = SERIOUS_Region();
+	uint32_t clampedweapon = (mainweapon == SERIOUS_chainsaw) ? SERIOUS_bomb : (mainweapon - 1);
 
-	const uint32_t playerbase = (region ? MEM_ReadUInt(SERIOUS_playerbase) : MEM_ReadUInt(SERIOUS_playerbase_PAL));
+	MEM_WriteInt(playerbase + 0x05F8, clampedweapon); // queues up the weapon before the desired one so that the game then pulls out the next weapon
 
-	if(!playerbase) // if playerbase is invalid
-		return;
+	MEM_WriteInt(playerbase + SERIOUS_chosen_weapon_holder, mainweapon); // updating in memory the player's actual weapon choice
 
+	// force weapon switch (simulates pressing the X button on an original controller)
+	region ? MEM_WriteInt(SERIOUS_weapon_switch_first, 0x00000001) : MEM_WriteInt(SERIOUS_weapon_switch_first_PAL, 0x00000001);
+	region ? MEM_WriteInt(SERIOUS_weapon_switch_second, 0x00000001) : MEM_WriteInt(SERIOUS_weapon_switch_second_PAL, 0x00000001);
 
-	uint8_t currentweapon = MEM_ReadInt(0x817D8860);
+	// NOTE: Using the method the game uses to switch to any weapon via the weapon wheel doesn't work due to it ruining the banner by forcing it to turn off
+}
 
-	MEM_WriteInt(playerbase + 0x05F8, mainweapon);
-
-	MEM_WriteInt(0x817D8860, mainweapon);
-
-	if(currentweapon != MEM_ReadInt(playerbase + 0x05F8))
+//==========================================================================
+// Purpose: show weapon banner on screen whenever a player presses a weapon key
+//==========================================================================
+static void SERIOUS_Update_Banner(uint32_t playerbase)
+{
+	uint8_t visibilty;
+	uint32_t timer = 0xFFFFFFFF;
+	switch (MEM_ReadInt(playerbase + SERIOUS_weapon_bar_visibility)) // check what visibility level the banner is currently at
 	{
-		// force weapon switch
-		region ? MEM_WriteInt(SERIOUS_weapon_switch_first, 0x00000001) : MEM_WriteInt(SERIOUS_weapon_switch_first_PAL, 0x00000001);
-		region ? MEM_WriteInt(SERIOUS_weapon_switch_second, 0x00000001) : MEM_WriteInt(SERIOUS_weapon_switch_second_PAL, 0x00000001);
+		case 1: // fading in
+		{
+			return;
+		}
+		case 2: // fully visible
+		{
+			timer = 2;
+		}
+		case 3: // fading out
+		{
+			visibilty = 1;
+			timer = MEM_ReadInt(playerbase + 0x618);
+		}
+		default: // not visible
+		{
+			visibilty = 1;
+		}
+	}
+
+	MEM_WriteInt(playerbase + SERIOUS_weapon_bar_visibility, visibilty); // make weapon bar visible if it isn't already visible
+	if(timer != 0xFFFFFFFF)
+	{
+		MEM_WriteInt(playerbase + SERIOUS_weapon_bar_timer, timer); // do not reset timer so that fading out can seemlessly turn back to fading in
 	}
 }
 
