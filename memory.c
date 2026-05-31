@@ -624,9 +624,12 @@ uint16_t MEM_ReadUInt16(const uint32_t addr)
 	if(!emuoffset || NOTWITHINMEMRANGE(addr)) // if gamecube memory has not been init by dolphin or reading from outside of memory range
 		return 0;
 	uint16_t output; // temp var used for output of function
-	ReadProcessMemory(emuhandle, (LPVOID)(emuoffset + (addr - 0x80000000)), &output, sizeof(output), NULL);
+	//ReadProcessMemory(emuhandle, (LPVOID)(emuoffset + (addr - 0x80000000)), &output, sizeof(output), NULL);
 	// MEM_ByteSwap32(&output); // byteswap
 	// TODO: needs byteswap to be proper
+
+	output = (MEM_ReadUInt8(addr) << 8) + MEM_ReadUInt8(addr + 1);
+
 	return output;
 }
 

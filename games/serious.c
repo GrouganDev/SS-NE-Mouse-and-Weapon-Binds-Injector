@@ -34,6 +34,8 @@
 #define SERIOUS_camx 0x8133C930 - 0x8133C6A0
 #define SERIOUS_camy 0x8133C934 - 0x8133C6A0
 #define SERIOUS_fov 0x8133C99C - 0x8133C6A0
+#define SERIOUS_current_weapon 0x5DC
+#define SERIOUS_weapon_bar_visibility 0x60C
 
 #define SERIOUS_has_chainsaw 0x4CF
 #define SERIOUS_has_pistol 0x4E7
@@ -72,14 +74,14 @@
 #define SERIOUS_playerbase 0x802D8948 // playable character pointer
 #define SERIOUS_playerbase_PAL 0x802D9048 // PAL character pointer
 
-#define SERIOUS_weapon_switch_first 0x80650b28 // first boolean to toggle weapon switch animation
-#define SERIOUS_weapon_switch_second 0x80650b60 // second boolean to toggle same thing (BOTH MUST BE ACTIVATED IN SEQUENTIAL ORDER)
+#define SERIOUS_weapon_switch_first 0x80650b28 // first uint8_tean to toggle weapon switch animation
+#define SERIOUS_weapon_switch_second 0x80650b60 // second uint8_tean to toggle same thing (BOTH MUST BE ACTIVATED IN SEQUENTIAL ORDER)
 
 #define SERIOUS_weapon_switch_first_PAL 0x8066e828 // same as above for PAL
 #define SERIOUS_weapon_switch_second_PAL 0x8066e860 // same as above for PAL
 
-#define SERIOUS_weapons_cheat 0x802DA283 // all weapons cheat boolean
-#define SERIOUS_weapons_cheat_PAL 0x802DA983 // all weapons cheat boolean PAL
+#define SERIOUS_weapons_cheat 0x802DA283 // all weapons cheat uint8_tean
+#define SERIOUS_weapons_cheat_PAL 0x802DA983 // all weapons cheat uint8_tean PAL
 
 
 // WEAPON INDICIES
@@ -102,7 +104,7 @@
 static const SERIOUSKEYS* KEYS;
 
 static const uint8_t WEAPONOFFSETORDER[] = {SERIOUS_has_chainsaw, SERIOUS_has_pistol, SERIOUS_has_uzis, SERIOUS_has_shotgun, SERIOUS_has_minigun, SERIOUS_has_grenade_launcher, 
-	SERIOUS_has_rocket_launcher, SERIOUS_has_flamer, SERIOUS_has_sniper, SERIOUS_has_powergun, SERIOUS_has_cannon};
+	SERIOUS_has_rocket_launcher, SERIOUS_has_flamer, SERIOUS_has_sniper, SERIOUS_has_powergun, SERIOUS_has_cannon, SERIOUS_bombs};
 
 
 static uint8_t SERIOUS_Status(void);
@@ -243,23 +245,37 @@ static void SERIOUS_Weapon_Check(void)
 
 	if(!playerbase) // if playerbase is invalid
 		return;
-	
 
 	uint8_t allweapons = region ? MEM_ReadUInt8(SERIOUS_weapons_cheat) : MEM_ReadUInt8(SERIOUS_weapons_cheat_PAL);
 
 	uint32_t currentweapon = MEM_ReadInt(0x817D8860);
 	uint32_t previousweapon = MEM_ReadInt(playerbase + 0x05F8);
 
-	uint8_t shotgunhasammo = MEM_ReadUInt8(playerbase + SERIOUS_shells);
-	uint16_t uzishasammo = MEM_ReadUInt16(playerbase + SERIOUS_bullets) || MEM_ReadUInt16(playerbase + SERIOUS_reflect_bullets);
-	uint16_t minigunhasammo = MEM_ReadUInt16(playerbase + SERIOUS_bullets) || MEM_ReadUInt16(playerbase + SERIOUS_homing_bullets);
-	uint8_t rockethasammo = MEM_ReadUInt8(playerbase + SERIOUS_rockets) || MEM_ReadUInt8(playerbase + SERIOUS_homing_rockets) || MEM_ReadUInt8(playerbase + SERIOUS_sonic_rockets);
-	uint8_t grenadehasammo = MEM_ReadUInt8(playerbase + SERIOUS_grenades) || MEM_ReadUInt8(playerbase + SERIOUS_mines) || MEM_ReadUInt8(playerbase + SERIOUS_spidermines);
-	uint16_t flamerhasammo = MEM_ReadUInt16(playerbase + SERIOUS_napalm) || MEM_ReadUInt16(playerbase + SERIOUS_freeze) || MEM_ReadUInt16(playerbase + SERIOUS_laughing_gas);
-	uint8_t sniperhasammo = MEM_ReadUInt8(playerbase + SERIOUS_rifle);
-	uint8_t cannonhasammo = MEM_ReadUInt8(playerbase + SERIOUS_cannons);
-	uint16_t powergunhasammo = MEM_ReadUInt16(playerbase + SERIOUS_energy);
-	uint8_t bombhasammo = MEM_ReadUInt8(playerbase + SERIOUS_bombs);
+	if(currentweapon < SERIOUS_chainsaw || currentweapon > SERIOUS_bomb)
+	{
+		currentweapon = SERIOUS_pistols; // make sure weapon variables stay in range
+	}
+
+	if(previousweapon < SERIOUS_chainsaw || previousweapon > SERIOUS_bomb)
+	{
+		previousweapon = SERIOUS_pistols; // make sure weapon variables stay in range
+	}
+
+	uint8_t offset = (MEM_ReadUInt16(playerbase + SERIOUS_bullets) == 17778) ? 0x40 : 0x00; // checks if there is an offset for the pointer which checks weapon ammo (only true in the Roman temple levels)
+
+	uint8_t shotgunhasammo = MEM_ReadUInt8(playerbase + SERIOUS_shells + offset);
+	uint16_t uzishasammo = MEM_ReadUInt16(playerbase + SERIOUS_bullets + offset) || MEM_ReadUInt16(playerbase + SERIOUS_reflect_bullets + offset);
+	uint16_t minigunhasammo = MEM_ReadUInt16(playerbase + SERIOUS_bullets + offset) || MEM_ReadUInt16(playerbase + SERIOUS_homing_bullets + offset);
+	uint8_t rockethasammo = MEM_ReadUInt8(playerbase + SERIOUS_rockets + offset) || MEM_ReadUInt8(playerbase + SERIOUS_homing_rockets + offset) || MEM_ReadUInt8(playerbase + SERIOUS_sonic_rockets + offset);
+	uint8_t grenadehasammo = MEM_ReadUInt8(playerbase + SERIOUS_grenades + offset) || MEM_ReadUInt8(playerbase + SERIOUS_mines + offset) || MEM_ReadUInt8(playerbase + SERIOUS_spidermines + offset);
+	uint16_t flamerhasammo = MEM_ReadUInt16(playerbase + SERIOUS_napalm + offset) || MEM_ReadUInt16(playerbase + SERIOUS_freeze + offset) || MEM_ReadUInt16(playerbase + SERIOUS_laughing_gas + offset);
+	uint8_t sniperhasammo = MEM_ReadUInt8(playerbase + SERIOUS_rifle + offset);
+	uint8_t cannonhasammo = MEM_ReadUInt8(playerbase + SERIOUS_cannons + offset);
+	uint16_t powergunhasammo = MEM_ReadUInt16(playerbase + SERIOUS_energy + offset);
+	uint8_t bombhasammo = MEM_ReadUInt8(playerbase + SERIOUS_bombs + offset);
+
+	uint16_t ammoindex[] = {1, 1, uzishasammo, shotgunhasammo, minigunhasammo, grenadehasammo, rockethasammo, flamerhasammo, sniperhasammo, powergunhasammo, cannonhasammo, bombhasammo};
+
 
 	uint8_t haschainsaw = allweapons || MEM_ReadUInt8(playerbase + SERIOUS_has_chainsaw);
 	uint8_t haspistol = allweapons || MEM_ReadUInt8(playerbase + SERIOUS_has_pistol);
@@ -273,6 +289,19 @@ static void SERIOUS_Weapon_Check(void)
 	uint8_t haspowergun = allweapons || MEM_ReadUInt8(playerbase + SERIOUS_has_powergun);
 	uint8_t hascannon = allweapons || MEM_ReadUInt8(playerbase + SERIOUS_has_cannon);
 
+	uint8_t hasweaponindex[] = {haschainsaw, haspistol, hasuzis, hasshotgun, hasminigun, hasgrenadelauncher, hasrocketlauncher, hasflamer, hassniper, haspowergun, hascannon, bombhasammo};
+	
+
+	uint8_t isvalidweapon = ammoindex[previousweapon] && (allweapons || hasweaponindex[previousweapon]); // checks if the weapon the currently in-game equipped weapon is actually in the player's inventory and has ammo
+
+	if(!isvalidweapon)
+	{
+		currentweapon = previousweapon;
+		currentweapon = (currentweapon == SERIOUS_chainsaw) ? SERIOUS_bomb : (currentweapon - 1); // set the queued up weapon to be the index below the invalid weapon (will run each frame until a valid weapon is found)
+	}
+
+
+
 
 	if((KEYS->K_Chainsaw_Pressed || KEYS->K_Chainsaw_Alt_Pressed) && haschainsaw){
 		currentweapon = SERIOUS_chainsaw;
@@ -284,9 +313,10 @@ static void SERIOUS_Weapon_Check(void)
 
 	if((KEYS->K_Shotgun_Pressed || KEYS->K_Shotgun_Alt_Pressed) && shotgunhasammo && hasshotgun){
 		currentweapon = SERIOUS_shotgun;
+		
 	}
 
-	if((KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed) && (uzishasammo || minigunhasammo) && (hasuzis || hasminigun))
+	if((KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed) && ((uzishasammo && hasuzis) || (minigunhasammo && hasminigun)))
 		{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_minigun, SERIOUS_uzis, &currentweapon, previousweapon);
 
@@ -300,7 +330,7 @@ static void SERIOUS_Weapon_Check(void)
 		}
 	}
 
-	if((KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed) && (rockethasammo || grenadehasammo) && (hasrocketlauncher || hasgrenadelauncher))
+	if((KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed) && ((rockethasammo && hasrocketlauncher) || (grenadehasammo && hasgrenadelauncher)))
 	{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_rocket_launcher, SERIOUS_grenade_launcher, &currentweapon, previousweapon);
 
@@ -314,7 +344,7 @@ static void SERIOUS_Weapon_Check(void)
 		}
 	}
 
-	if((KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed) && (flamerhasammo || sniperhasammo) && (hasflamer || hassniper)) 
+	if((KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed) && ((flamerhasammo && hasflamer) || (sniperhasammo && hassniper))) 
 	{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_flamethrower, SERIOUS_sniper_rifle, &currentweapon, previousweapon);
 
@@ -328,7 +358,7 @@ static void SERIOUS_Weapon_Check(void)
 		}
 	}
 
-	if((KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed) && (cannonhasammo || powergunhasammo) && (hascannon || haspowergun))
+	if((KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed) && ((cannonhasammo && hascannon) || (powergunhasammo && haspowergun)))
 	{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_cannon, SERIOUS_sirian_powergun, &currentweapon, previousweapon);
 
@@ -340,12 +370,23 @@ static void SERIOUS_Weapon_Check(void)
 		{
 			currentweapon = SERIOUS_cannon;
 		}
-
-		
 	}
 
 	if((KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed) && bombhasammo){
 		currentweapon = SERIOUS_bomb;
+	}
+
+	if(KEYS->any_key_just_pressed)
+	{
+		if((MEM_ReadInt(playerbase + SERIOUS_current_weapon) != MEM_ReadInt(playerbase + 0x05F8) || MEM_ReadInt(playerbase + SERIOUS_current_weapon) != MEM_ReadInt(0x817D8860)))
+		{
+			MEM_WriteInt(0x817D8860, 0xFFFFFFFF); // force change to desired weapon if weapon tracking variables are not up to date with the current weapon
+		}
+
+		if(!MEM_ReadInt(playerbase + SERIOUS_weapon_bar_visibility))
+		{
+			MEM_WriteInt(playerbase + SERIOUS_weapon_bar_visibility, 1); // make weapon bar visible if it isn't already visible
+		}
 	}
 	
 	SERIOUS_Update_Weapon(currentweapon); // update memory to swap to selected weapon
@@ -370,7 +411,7 @@ static void SERIOUS_Update_Weapon(uint32_t mainweapon)
 
 	MEM_WriteInt(0x817D8860, mainweapon);
 
-	if(currentweapon != MEM_ReadInt(0x817D8860))
+	if(currentweapon != MEM_ReadInt(playerbase + 0x05F8))
 	{
 		// force weapon switch
 		region ? MEM_WriteInt(SERIOUS_weapon_switch_first, 0x00000001) : MEM_WriteInt(SERIOUS_weapon_switch_first_PAL, 0x00000001);
@@ -421,12 +462,23 @@ void UPDATE_Serious_Keys(SERIOUSKEYS* keys)
 	SEARCH_Serious_Keys(&keys->K_CannonPowergun_Pressed, &keys->K_CannonPowergun_Last_Pressed, &keys->K_CannonPowergun_Alt_Pressed, &keys->K_CannonPowergun_Alt_Last_Pressed, &keys->K_CannonPowergun[0]);
 
 	SEARCH_Serious_Keys(&keys->K_Bomb_Pressed, &keys->K_Bomb_Last_Pressed, &keys->K_Bomb_Alt_Pressed, &keys->K_Bomb_Alt_Last_Pressed, &keys->K_Bomb[0]);
+
+	for(int i = 0; i <= 30; i += 2)
+	{
+		if(*(&keys->K_Chainsaw_Pressed + i))
+		{
+			keys->any_key_just_pressed = 1;
+			return;
+		}
+	}
+
+	keys->any_key_just_pressed = 0;
 }
 
 //==========================================================================
 // Purpose: checks to see if there are null values in either the primary or alt weapon keybinds before then checking for that key's status
 //==========================================================================
-void SEARCH_Serious_Keys(bool *pressed, bool *last_pressed, bool *alt_pressed, bool *alt_last_pressed, uint8_t ls[])
+void SEARCH_Serious_Keys(uint8_t *pressed, uint8_t *last_pressed, uint8_t *alt_pressed, uint8_t *alt_last_pressed, uint8_t ls[])
 {
 	if(ls[0] != 0x00)
 	{
@@ -434,8 +486,8 @@ void SEARCH_Serious_Keys(bool *pressed, bool *last_pressed, bool *alt_pressed, b
 	}
 	else
 	{
-		*pressed = false;
-		*last_pressed = false;
+		*pressed = 0;
+		*last_pressed = 0;
 	}
 
 
@@ -445,26 +497,26 @@ void SEARCH_Serious_Keys(bool *pressed, bool *last_pressed, bool *alt_pressed, b
 	}
 	else
 	{
-		*alt_pressed = false;
-		*alt_last_pressed = false;
+		*alt_pressed = 0;
+		*alt_last_pressed = 0;
 	}
 }
 
 //==========================================================================
 // Purpose: determines the status of a key press with the purpose of only detecting if a key was JUST pressed
 //==========================================================================
-void CHECK_Key(bool *pressed, bool *last_pressed, SHORT key){
+void CHECK_Key(uint8_t *pressed, uint8_t *last_pressed, SHORT key){
     if(key && !*last_pressed){ // key was just pressed and was not being previously held down
-        *last_pressed = true;
-        *pressed = true;
+        *last_pressed = 1;
+        *pressed = 1;
     }
     else if(!key) // key was not pressed
     {
-        *last_pressed = false;
-        *pressed = false;
+        *last_pressed = 0;
+        *pressed = 0;
     }
     else if(*last_pressed) // key is being held down
     {
-        *pressed = false;
+        *pressed = 0;
     }
 }
