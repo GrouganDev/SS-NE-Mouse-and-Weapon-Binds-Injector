@@ -292,33 +292,22 @@ static void SERIOUS_Weapon_Check(void)
 	uint8_t hascannon = allweapons || MEM_ReadUInt8(playerbase + SERIOUS_has_cannon);
 
 	uint8_t hasweaponindex[] = {haschainsaw, haspistol, hasuzis, hasshotgun, hasminigun, hasgrenadelauncher, hasrocketlauncher, hasflamer, hassniper, haspowergun, hascannon, bombhasammo};
-	
-
-	uint8_t isvalidweapon = ammoindex[currentweapon] && (allweapons || hasweaponindex[currentweapon]); // checks if the currently in-game equipped weapon is actually in the player's inventory and has ammo
-
-	if(!isvalidweapon)
-	{
-		desiredweapon = currentweapon;
-		desiredweapon = (desiredweapon == SERIOUS_chainsaw) ? SERIOUS_bomb : (desiredweapon - 1); // set the queued up weapon to be the index below the invalid weapon (will run each frame until a valid weapon is found)
-	}
-
-
 
 	// CHECK KEYS
 	if((KEYS->K_Chainsaw_Pressed || KEYS->K_Chainsaw_Alt_Pressed) && haschainsaw){
 		desiredweapon = SERIOUS_chainsaw;
 	}
 
-	if((KEYS->K_Pistols_Pressed || KEYS->K_Pistols_Alt_Pressed) && haspistol){
+	else if((KEYS->K_Pistols_Pressed || KEYS->K_Pistols_Alt_Pressed) && haspistol){
 		desiredweapon = SERIOUS_pistols;
 	}
 
-	if((KEYS->K_Shotgun_Pressed || KEYS->K_Shotgun_Alt_Pressed) && shotgunhasammo && hasshotgun){
+	else if((KEYS->K_Shotgun_Pressed || KEYS->K_Shotgun_Alt_Pressed) && shotgunhasammo && hasshotgun){
 		desiredweapon = SERIOUS_shotgun;
 		
 	}
 
-	if((KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed) && ((uzishasammo && hasuzis) || (minigunhasammo && hasminigun)))
+	else if((KEYS->K_Bullets_Pressed || KEYS->K_Bullets_Alt_Pressed) && ((uzishasammo && hasuzis) || (minigunhasammo && hasminigun)))
 		{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_minigun, SERIOUS_uzis, &desiredweapon, currentweapon);
 
@@ -332,7 +321,7 @@ static void SERIOUS_Weapon_Check(void)
 		}
 	}
 
-	if((KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed) && ((rockethasammo && hasrocketlauncher) || (grenadehasammo && hasgrenadelauncher)))
+	else if((KEYS->K_Explosives_Pressed || KEYS->K_Explosives_Alt_Pressed) && ((rockethasammo && hasrocketlauncher) || (grenadehasammo && hasgrenadelauncher)))
 	{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_rocket_launcher, SERIOUS_grenade_launcher, &desiredweapon, currentweapon);
 
@@ -346,7 +335,7 @@ static void SERIOUS_Weapon_Check(void)
 		}
 	}
 
-	if((KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed) && ((flamerhasammo && hasflamer) || (sniperhasammo && hassniper))) 
+	else if((KEYS->K_FlameRifle_Pressed || KEYS->K_FlameRifle_Alt_Pressed) && ((flamerhasammo && hasflamer) || (sniperhasammo && hassniper))) 
 	{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_flamethrower, SERIOUS_sniper_rifle, &desiredweapon, currentweapon);
 
@@ -360,7 +349,7 @@ static void SERIOUS_Weapon_Check(void)
 		}
 	}
 
-	if((KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed) && ((cannonhasammo && hascannon) || (powergunhasammo && haspowergun)))
+	else if((KEYS->K_CannonPowergun_Pressed || KEYS->K_CannonPowergun_Alt_Pressed) && ((cannonhasammo && hascannon) || (powergunhasammo && haspowergun)))
 	{
 		SERIOUS_Assign_Weapon_Group(SERIOUS_cannon, SERIOUS_sirian_powergun, &desiredweapon, currentweapon);
 
@@ -374,7 +363,7 @@ static void SERIOUS_Weapon_Check(void)
 		}
 	}
 
-	if((KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed) && bombhasammo){
+	else if((KEYS->K_Bomb_Pressed || KEYS->K_Bomb_Alt_Pressed) && bombhasammo){
 		desiredweapon = SERIOUS_bomb;
 	}
 
@@ -386,9 +375,19 @@ static void SERIOUS_Weapon_Check(void)
 	{
 		SERIOUS_Update_Banner(playerbase);
 	}
-	
-	if(MEM_ReadInt(playerbase + SERIOUS_chosen_weapon_holder) != desiredweapon)
+
+
+	if(MEM_ReadInt(playerbase + SERIOUS_chosen_weapon_holder) != desiredweapon || currentweapon != desiredweapon)
 	{
+		SERIOUS_Update_Weapon(desiredweapon, playerbase, region); // update memory to swap to selected weapon
+	}
+
+	uint8_t isvalidweapon = ammoindex[desiredweapon] && (allweapons || hasweaponindex[desiredweapon]); // checks if the currently in-game equipped weapon is actually in the player's inventory and has ammo
+
+	if(!isvalidweapon)
+	{
+		desiredweapon = (desiredweapon == SERIOUS_chainsaw) ? SERIOUS_bomb : (desiredweapon - 1); // set the queued up weapon to be the index below the invalid weapon (will run each frame until a valid weapon is found)
+
 		SERIOUS_Update_Weapon(desiredweapon, playerbase, region); // update memory to swap to selected weapon
 	}
 }
@@ -426,7 +425,7 @@ static void SERIOUS_Update_Banner(uint32_t playerbase)
 		}
 		case 2: // fully visible
 		{
-			timer = 2;
+			timer = 0;
 		}
 		case 3: // fading out
 		{
